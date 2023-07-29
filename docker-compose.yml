@@ -1,6 +1,50 @@
 version: '3.8'
 
 services:
+  api_gateway:
+    container_name: api_gateway
+    build:
+      context: ./api-gateway
+      dockerfile: ./Dockerfile
+    ports:
+      - "${API_GATEWAY_PORT:-4000}:3000"
+    restart: unless-stopped
+    env_file:
+      - ./api-gateway/.env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./api-gateway:/usr/src/app # any change to base folder should be reflected
+      - /usr/src/app/node_modules
+
+  auth_microservice:
+    container_name: auth_microservice
+    build:
+      context: ./auth-microservice
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./auth-microservice/.env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./auth-microservice:/usr/src/app # any change to base folder should be reflected
+      - /usr/src/app/node_modules
+
+  news_microservice:
+    container_name: news_microservice
+    build:
+      context: ./news-microservice
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./news-microservice/.env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./news-microservice:/usr/src/app # any change to base folder should be reflected
+      - /usr/src/app/node_modules
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
