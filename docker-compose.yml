@@ -16,6 +16,8 @@ services:
     volumes:
       - ./api-gateway:/usr/src/app # any change to base folder should be reflected
       - /usr/src/app/node_modules
+    networks:
+      - backend
 
   auth_microservice:
     container_name: auth_microservice
@@ -27,9 +29,28 @@ services:
       - ./auth-microservice/.env
     depends_on:
       - rabbitmq
+      - db-auth
     volumes:
       - ./auth-microservice:/usr/src/app # any change to base folder should be reflected
       - /usr/src/app/node_modules
+    networks:
+      - auth-microservice
+      - backend
+
+  db-auth:
+    image: postgres
+    restart: unless-stopped
+    container_name: db-auth
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_USER: maks
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth
+    volumes:
+      - postgres_auth:/data_auth/auth/postgres
+    networks:
+      - auth-microservice
 
   news_microservice:
     container_name: news_microservice
@@ -44,6 +65,39 @@ services:
     volumes:
       - ./news-microservice:/usr/src/app # any change to base folder should be reflected
       - /usr/src/app/node_modules
+    networks:
+      - news-microservice
+      - backend
+
+  db-news:
+    image: postgres
+    restart: unless-stopped
+    container_name: db-news
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_USER: maks
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: news
+    volumes:
+      - postgres_news:/data_news/news/postgres
+    networks:
+      - news-microservice
+
+  dbadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    container_name: dbadmin
+    ports:
+      - 5050:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin:/root/.pgadmin
+    networks:
+      - auth-microservice
+      - news-microservice
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -60,3 +114,15 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
       - ./rabbitmq:/var/lib/rabbitmq
+    networks:
+      - backend
+
+networks:
+  auth-microservice:
+  news-microservice:
+  backend:
+
+volumes:
+  postgres_auth:
+  postgres_news:
+  pgadmin:
