@@ -1,13 +1,31 @@
 version: '3.8'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    hostname: rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+    networks:
+      - backend
+
   api_gateway:
     container_name: api_gateway
     build:
       context: ./api-gateway
       dockerfile: ./Dockerfile
     ports:
-      - "${API_GATEWAY_PORT:-4000}:3000"
+      - "${API_GATEWAY_PORT:-3000}:3000"
     restart: unless-stopped
     env_file:
       - ./api-gateway/.env
@@ -52,37 +70,37 @@ services:
     networks:
       - auth-microservice
 
-  news_microservice:
-    container_name: news_microservice
-    build:
-      context: ./news-microservice
-      dockerfile: ./Dockerfile
-    restart: unless-stopped
-    env_file:
-      - ./news-microservice/.env
-    depends_on:
-      - rabbitmq
-    volumes:
-      - ./news-microservice:/usr/src/app # any change to base folder should be reflected
-      - /usr/src/app/node_modules
-    networks:
-      - news-microservice
-      - backend
-
-  db-news:
-    image: postgres
-    restart: unless-stopped
-    container_name: db-news
-    expose:
-      - "5432"
-    environment:
-      POSTGRES_USER: maks
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: news
-    volumes:
-      - postgres_news:/data_news/news/postgres
-    networks:
-      - news-microservice
+#  news_microservice:
+#    container_name: news_microservice
+#    build:
+#      context: ./news-microservice
+#      dockerfile: ./Dockerfile
+#    restart: unless-stopped
+#    env_file:
+#      - ./news-microservice/.env
+#    depends_on:
+#      - rabbitmq
+#    volumes:
+#      - ./news-microservice:/usr/src/app # any change to base folder should be reflected
+#      - /usr/src/app/node_modules
+#    networks:
+#      - news-microservice
+#      - backend
+#
+#  db-news:
+#    image: postgres
+#    restart: unless-stopped
+#    container_name: db-news
+#    expose:
+#      - "5432"
+#    environment:
+#      POSTGRES_USER: maks
+#      POSTGRES_PASSWORD: password
+#      POSTGRES_DB: news
+#    volumes:
+#      - postgres_news:/data_news/news/postgres
+#    networks:
+#      - news-microservice
 
   dbadmin:
     image: dpage/pgadmin4
@@ -97,32 +115,14 @@ services:
       - pgadmin:/root/.pgadmin
     networks:
       - auth-microservice
-      - news-microservice
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    restart: always
-    hostname: rabbitmq
-    ports:
-      - '5672:5672'
-      - '15672:15672'
-    env_file:
-      - .env
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-    volumes:
-      - ./rabbitmq:/var/lib/rabbitmq
-    networks:
-      - backend
+#      - news-microservice
 
 networks:
   auth-microservice:
-  news-microservice:
+#  news-microservice:
   backend:
 
 volumes:
   postgres_auth:
-  postgres_news:
+#  postgres_news:
   pgadmin:

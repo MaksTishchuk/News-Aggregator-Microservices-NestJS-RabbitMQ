@@ -14,11 +14,7 @@ async function bootstrap() {
         `amqp://${configService.get<string>('RMQ_USER')}:${configService.get<string>('RMQ_PASSWORD')}@${configService.get<string>('RMQ_URL')}`,
       ],
       queue: 'auth',
-      noAck: false,
-      queueOptions: {
-        durable: true
-      },
-
+      noAck: false
     }
   })
   app.useGlobalPipes(new ValidationPipe())
