@@ -1,9 +1,10 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from "@nestjs/typeorm";
 import {UserEntity} from "./entities/user.entity";
 import {ILike, Repository} from "typeorm";
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
+import {RpcException} from "@nestjs/microservices";
 
 @Injectable()
 export class UserService {
@@ -19,7 +20,7 @@ export class UserService {
 
   async searchUsers(searchUsersDto: SearchUsersDto): Promise<UserEntity[]> {
     if (!searchUsersDto.username && !searchUsersDto.email) {
-      throw new NotFoundException('Search fields should not be empty!');
+      throw new RpcException(new BadRequestException('Search fields should not be empty!'));
     }
     const users = await this.userRepository.findBy([
       { username: ILike(`%${searchUsersDto.username}%`) },
@@ -33,7 +34,7 @@ export class UserService {
 
   async getUserById(id: number): Promise<UserEntity> {
     const user = await this.userRepository.findOne({where: {id}})
-    if (!user) throw new NotFoundException('User was not found!')
+    if (!user) throw new RpcException(new NotFoundException('User was not found!'))
     return user
   }
 
@@ -55,7 +56,7 @@ export class UserService {
       }
     )
     if (!updatedUser.affected) {
-      throw new NotFoundException(`User with id "${user.id}" has not been updated!`)
+      throw new RpcException(new BadRequestException(`User with id "${user.id}" has not been updated!`))
     }
     return await this.getUserById(user.id)
   }
@@ -63,7 +64,7 @@ export class UserService {
   async deleteUser(id: number) {
     const result = await this.userRepository.delete({ id });
     if (!result.affected) {
-      throw new NotFoundException(`User with id ${id} was not deleted!`);
+      throw new RpcException(new BadRequestException(`User with id ${id} was not deleted!`))
     }
     return { success: true, message: 'User has been deleted!' };
   }
