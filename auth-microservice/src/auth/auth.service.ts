@@ -19,9 +19,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    console.log('I am in auth-microservice register')
-    const existUser = await this.userRepository.findOneBy({email: dto.email})
-    if (existUser) throw new RpcException(new BadRequestException('User with this credentials already exists!'))
+    const existsUser = await this.userRepository.findOneBy({email: dto.email})
+    if (existsUser) throw new RpcException(new BadRequestException('User with this credentials already exists!'))
     const hashPassword = await bcryptjs.hash(dto.password, 10)
     const newUser = await this.userRepository.create({
       username: dto.username,

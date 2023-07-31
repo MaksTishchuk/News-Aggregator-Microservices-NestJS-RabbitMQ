@@ -1,4 +1,4 @@
-import {Controller, Logger} from '@nestjs/common';
+import {Controller, Logger, UseFilters} from '@nestjs/common';
 import {AuthService} from "./auth.service";
 import {Ctx, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {RegisterDto} from "./dto/register.dto";
@@ -7,21 +7,24 @@ import {LoginDto} from "./dto/login.dto";
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name)
+
   constructor(private readonly authService: AuthService) {}
 
   @MessagePattern({cmd: 'register'})
   async register(@Payload() dto: RegisterDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef()
     const originalMessage = context.getMessage()
-    Logger.log(`Try to register user with credentials`)
+    this.logger.log(`Try to register user`)
     try {
-      Logger.log(`Register Try`)
+      const result = await this.authService.register(dto)
       await channel.ack(originalMessage)
-      return await this.authService.register(dto)
+      this.logger.log(`Register success`)
+      return result
     } catch (error) {
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
-        Logger.log(`Register failed`)
+        this.logger.error(`Register failed: ${error.message}`)
       }
     }
   }
@@ -30,15 +33,16 @@ export class AuthController {
   async login(@Payload() dto: LoginDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef()
     const originalMessage = context.getMessage()
-    Logger.log(`Try to login user with credentials: ${dto}`)
+    this.logger.log(`Try to login user`)
     try {
-      Logger.log(`Login Try`)
+      const result = await this.authService.login(dto)
       await channel.ack(originalMessage)
-      return await this.authService.login(dto)
+      this.logger.log(`Login success`)
+      return result
     } catch (error) {
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
-        Logger.log(`Login failed`)
+        this.logger.error(`Login failed: ${error.message}`)
       }
     }
   }
