@@ -1,7 +1,10 @@
 import { GenderEnum } from '../entities/enum/gender.enum';
-import { IsOptional } from 'class-validator';
+import {IsNumber, IsOptional} from 'class-validator';
 
 export class UpdateUserProfileDto {
+  @IsNumber()
+  id: number;
+
   @IsOptional()
   firstName?: string;
 
