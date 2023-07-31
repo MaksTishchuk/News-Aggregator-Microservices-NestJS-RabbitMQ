@@ -4,7 +4,7 @@ import {Ctx, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {RegisterDto} from "./dto/register.dto";
 import {LoginDto} from "./dto/login.dto";
 
-@Controller('auth')
+@Controller()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name)
 

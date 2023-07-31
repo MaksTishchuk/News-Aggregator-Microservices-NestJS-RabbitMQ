@@ -15,9 +15,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest();
     const response = ctx.getResponse();
-    console.log('EXCEPTION: ', exception)
-    console.log('STATUS: ', exception.status)
-    console.log('INSTANCE OF: ', exception instanceof HttpException)
     let status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     if (exception.status) {
       status = exception.status

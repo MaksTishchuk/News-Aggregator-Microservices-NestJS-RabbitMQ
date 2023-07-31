@@ -4,7 +4,7 @@ import {Ctx, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 
-@Controller('user')
+@Controller()
 export class UserController {
 
   private logger = new Logger(UserController.name);
