@@ -5,7 +5,7 @@ import {
   Get,
   Logger,
   Param,
-  ParseIntPipe,
+  ParseIntPipe, Patch,
   Post,
   Put,
   Query, UseGuards
@@ -63,5 +63,15 @@ export class UserController {
   async deleteUser(@Param('userId', ParseIntPipe) id: number) {
     this.logger.log(`Try to admin delete user by id`)
     return await this.userService.deleteUser(id);
+  }
+
+  @Patch('subscribe/:subscriptionUserId')
+  @Auth()
+  async subscribeOnUser(
+    @GetCurrentUserId() userId: number,
+    @Param('subscriptionUserId', ParseIntPipe) subscriptionUserId: number
+  ) {
+    this.logger.log(`Try to get user by id`)
+    return await this.userService.subscribeOnUser(userId, subscriptionUserId);
   }
 }

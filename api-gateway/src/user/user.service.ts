@@ -39,4 +39,9 @@ export class UserService {
     const response = this.clientAuth.send('delete-user', id)
     return await lastValueFrom(response)
   }
+
+  async subscribeOnUser(userId: number, subscriptionUserId: number) {
+    const response = this.clientAuth.send('subscribe-on-user', {userId, subscriptionUserId})
+    return await lastValueFrom(response)
+  }
 }

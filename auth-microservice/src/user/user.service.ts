@@ -1,7 +1,7 @@
 import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from "@nestjs/typeorm";
 import {UserEntity} from "./entities/user.entity";
-import {ILike, Repository} from "typeorm";
+import {ILike, In, Repository} from "typeorm";
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {RpcException} from "@nestjs/microservices";
@@ -33,7 +33,10 @@ export class UserService {
   }
 
   async getUserById(id: number): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({where: {id}})
+    const user = await this.userRepository.findOne({
+      where: {id},
+      relations: ['subscribers', 'subscriptions']
+    })
     if (!user) throw new RpcException(new NotFoundException('User was not found!'))
     return user
   }
@@ -41,10 +44,12 @@ export class UserService {
   async getUserProfile(userId: number): Promise<UserEntity> {
     const profile = await this.userRepository
       .createQueryBuilder('user')
+      .leftJoin('user.subscribers', 'subscribers')
+      .leftJoin('user.subscriptions', 'subscriptions')
       .where('user.id = :id', { id: userId })
-      .getOne();
-    delete profile.password;
-    return profile;
+      .getOne()
+    delete profile.password
+    return profile
   }
 
   async updateUserProfile(updateUserProfileDto: UpdateUserProfileDto): Promise<UserEntity> {
@@ -67,5 +72,31 @@ export class UserService {
       throw new RpcException(new BadRequestException(`User with id ${id} was not deleted!`))
     }
     return { success: true, message: 'User has been deleted!' };
+  }
+
+  async subscribeOnUser(userId: number, subscriptionUserId: number) {
+    if (userId === subscriptionUserId) {
+      throw new BadRequestException(`A user cannot subscribe to himself!`);
+    }
+    const users = await this.userRepository.find({
+      where: {id: In([userId, subscriptionUserId])},
+      relations: ['subscribers', 'subscriptions']
+    })
+    let subscriptionUser, user
+    for (const findUser of users) {
+      if (findUser.id === subscriptionUserId) subscriptionUser = findUser
+      else if (findUser.id === userId) user = findUser
+    }
+    if (!subscriptionUser) throw new NotFoundException(
+      `User with id ${subscriptionUserId} was not found! Subscription failed!`
+    )
+    if (subscriptionUser.subscribers.find(subscriber => subscriber.id === user.id)) {
+      subscriptionUser.subscribers = subscriptionUser.subscribers.filter(
+        (subscriber) => subscriber.id !== user.id
+      )
+    } else {
+      subscriptionUser.subscribers.push(user)
+    }
+    return await this.userRepository.save(subscriptionUser)
   }
 }

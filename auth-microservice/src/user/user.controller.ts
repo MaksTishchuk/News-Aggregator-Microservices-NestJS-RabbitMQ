@@ -94,4 +94,18 @@ export class UserController {
       await channel.ack(originalMessage);
     }
   }
+
+  @MessagePattern('subscribe-on-user')
+  async subscribeOnUser(@Payload() payload, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to subscribe on user`)
+      const user = await this.userService.subscribeOnUser(payload.userId, payload.subscriptionUserId);
+      return user;
+    } finally {
+      this.logger.log(`Subscribe on user success`)
+      await channel.ack(originalMessage);
+    }
+  }
 }

@@ -52,18 +52,18 @@ export class UserEntity {
   @Column({ default: '' })
   avatar: string;
 
-  @ManyToMany((type) => UserEntity, (user) => user.following)
+  @ManyToMany((type) => UserEntity, (user) => user.subscriptions, {cascade: true})
   @JoinTable()
-  followers: UserEntity[];
+  subscribers: UserEntity[];
 
-  @ManyToMany((type) => UserEntity, (user) => user.followers)
-  following: UserEntity[];
+  @ManyToMany((type) => UserEntity, (user) => user.subscribers)
+  subscriptions: UserEntity[];
 
-  @RelationCount((user: UserEntity) => user.followers)
-  followersCount: number;
+  @RelationCount((user: UserEntity) => user.subscribers)
+  subscribersCount: number;
 
-  @RelationCount((user: UserEntity) => user.following)
-  followingCount: number;
+  @RelationCount((user: UserEntity) => user.subscriptions)
+  subscriptionsCount: number;
 
   @CreateDateColumn()
   createdAt: Date;
