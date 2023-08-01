@@ -38,10 +38,11 @@ export class AuthService {
   }
 
   async validateUser(dto: LoginDto) {
-    const user = await this.userRepository.findOne({
-      where: {email: dto.email},
-      select: ['id', 'username', 'email', 'password', 'role']
-    })
+    const user = await this.userRepository.createQueryBuilder('user')
+      .select(['user.id', 'user.username', 'user.email', 'user.password', 'user.role'])
+      .addSelect("user.password")
+      .where('user.email = :email', { email: dto.email })
+      .getOne()
     if (!user) throw new RpcException(new NotFoundException('User was not found!'))
     const isValidPassword = await bcryptjs.compare(dto.password, user.password)
     if (!isValidPassword) throw new RpcException(new NotFoundException('Invalid credentials!'))

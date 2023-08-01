@@ -48,17 +48,17 @@ export class UserService {
   }
 
   async updateUserProfile(updateUserProfileDto: UpdateUserProfileDto): Promise<UserEntity> {
-    const findUser = await this.getUserById(updateUserProfileDto.id)
-    const updatedUser = await this.userRepository.update(
-      {id: findUser.id},
-      {
-        ...updateUserProfileDto,
-      }
-    )
+    const updatedUser = await this.userRepository.createQueryBuilder()
+      .update<UserEntity>(UserEntity, updateUserProfileDto)
+      .where('id = :id', {id: updateUserProfileDto.id})
+      .returning('*')
+      .updateEntity(true)
+      .execute()
     if (!updatedUser.affected) {
       throw new RpcException(new BadRequestException(`User with id "${updateUserProfileDto.id}" has not been updated!`))
     }
-    return await this.getUserById(updateUserProfileDto.id)
+    delete updatedUser.raw[0].password
+    return updatedUser.raw[0]
   }
 
   async deleteUser(id: number) {
