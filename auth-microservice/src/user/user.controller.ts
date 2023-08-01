@@ -67,7 +67,7 @@ export class UserController {
     }
   }
 
-  @MessagePattern('update-profile')
+  @MessagePattern('update-user-profile')
   async updateProfile(@Payload() dto: UpdateUserProfileDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();

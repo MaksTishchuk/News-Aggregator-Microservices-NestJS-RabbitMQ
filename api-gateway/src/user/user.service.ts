@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {lastValueFrom} from "rxjs";
 import {SearchUsersDto} from "./dto/search-users.dto";
+import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 
 @Injectable()
 export class UserService {
@@ -19,8 +20,23 @@ export class UserService {
     return await lastValueFrom(response)
   }
 
-  async getUserById(id) {
+  async getUserById(id: number) {
     const response = this.clientAuth.send('get-user-by-id', id)
+    return await lastValueFrom(response)
+  }
+
+  async getUserProfile(id: number) {
+    const response = this.clientAuth.send('get-user-profile', id)
+    return await lastValueFrom(response)
+  }
+
+  async updateUserProfile(id: number, dto: UpdateUserProfileDto) {
+    const response = this.clientAuth.send('update-user-profile', {id, ...dto})
+    return await lastValueFrom(response)
+  }
+
+  async deleteUser(id: number) {
+    const response = this.clientAuth.send('delete-user', id)
     return await lastValueFrom(response)
   }
 }
