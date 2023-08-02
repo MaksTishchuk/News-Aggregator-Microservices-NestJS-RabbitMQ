@@ -1,8 +1,9 @@
 import {Controller, Logger} from '@nestjs/common';
 import {UserService} from "./user.service";
-import {Ctx, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
+import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
+import {AckErrors} from "../utils/ack-errors";
 
 @Controller()
 export class UserController {
@@ -109,17 +110,20 @@ export class UserController {
     }
   }
 
-  @MessagePattern('delete-user')
+  @EventPattern('delete-user')
   async deleteUser(@Payload() id: number, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to delete user`)
-      const user = await this.userService.deleteUser(id);
-      return user;
-    } finally {
+      await this.userService.deleteUser(id)
+      await channel.ack(originalMessage)
       this.logger.log(`Delete user success`)
-      await channel.ack(originalMessage);
+    } catch (error) {
+      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      if (AckErrors.hasAckErrors(error.message)) {
+        await channel.ack(originalMessage)
+      }
     }
   }
 

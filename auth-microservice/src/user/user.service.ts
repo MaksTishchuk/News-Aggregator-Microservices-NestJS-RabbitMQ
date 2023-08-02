@@ -29,10 +29,7 @@ export class UserService {
       { username: ILike(`%${searchUsersDto.username}%`) },
       { email: ILike(`%${searchUsersDto.email}%`) },
     ]);
-    return users.map((user) => {
-      delete user.password;
-      return user;
-    });
+    return users
   }
 
   async getUserById(id: number): Promise<UserEntity> {
@@ -45,10 +42,9 @@ export class UserService {
   }
 
   async getUserProfile(userId: number): Promise<UserEntity> {
-    const profile = await this.userRepository
-      .createQueryBuilder('user')
-      .leftJoin('user.subscribers', 'subscribers')
-      .leftJoin('user.subscriptions', 'subscriptions')
+    const profile = await this.userRepository.createQueryBuilder('user')
+      .leftJoinAndSelect('user.subscribers', 'subscribers')
+      .leftJoinAndSelect('user.subscriptions', 'subscriptions')
       .where('user.id = :id', { id: userId })
       .getOne()
     delete profile.password
@@ -75,9 +71,7 @@ export class UserService {
 
   async getUserAvatar(id: number) {
     const user = await this.getUserById(id)
-    const url = this.configService.get<string>('SERVER_URL')
-    const avatarURL = url + '/images/' + user.avatar
-    return avatarURL
+    return this.configService.get<string>('SERVER_URL') + '/images/' + user.avatar
   }
 
   async updateUserAvatar(payload) {
@@ -89,11 +83,10 @@ export class UserService {
   }
 
   async deleteUser(id: number) {
-    const result = await this.userRepository.delete({ id });
+    const result = await this.userRepository.delete({ id })
     if (!result.affected) {
       throw new RpcException(new BadRequestException(`User with id ${id} was not deleted!`))
     }
-    return { success: true, message: 'User has been deleted!' };
   }
 
   async subscribeOnUser(userId: number, subscriptionUserId: number) {

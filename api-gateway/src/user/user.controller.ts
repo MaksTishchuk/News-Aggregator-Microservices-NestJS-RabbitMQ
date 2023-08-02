@@ -88,7 +88,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async deleteUser(@Param('userId', ParseIntPipe) id: number) {
     this.logger.log(`Try to admin delete user by id`)
-    return await this.userService.deleteUser(id);
+    await this.userService.deleteUser(id);
   }
 
   @Patch('subscribe/:subscriptionUserId')
