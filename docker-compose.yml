@@ -42,6 +42,8 @@ services:
     build:
       context: ./auth-microservice
       dockerfile: ./Dockerfile
+    ports:
+      - "${AUTH_MICROSERVICE_PORT:-3001}:3001"
     restart: unless-stopped
     env_file:
       - ./auth-microservice/.env

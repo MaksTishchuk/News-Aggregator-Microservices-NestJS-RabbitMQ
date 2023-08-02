@@ -8,7 +8,7 @@ import {
   ParseIntPipe, Patch,
   Post,
   Put,
-  Query, UseGuards
+  Query, Res, UploadedFile, UseGuards, UseInterceptors
 } from '@nestjs/common';
 import {UserService} from "./user.service";
 import {SearchUsersDto} from "./dto/search-users.dto";
@@ -18,6 +18,8 @@ import {GetUser} from "../auth/decorators/get-user.decorator";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
 import {AdminRoleGuard} from "./guards/admin-role.guard";
+import {FileInterceptor} from "@nestjs/platform-express";
+import { Response } from 'express'
 
 @Controller('users')
 export class UserController {
@@ -50,6 +52,30 @@ export class UserController {
   async updateUserProfile(@GetCurrentUserId() id: number, @Body() dto: UpdateUserProfileDto) {
     this.logger.log(`Try to update user profile`)
     return await this.userService.updateUserProfile(id, dto);
+  }
+
+  @Get(':userId/avatar')
+  async getUserAvatar(@Res() res: Response, @Param('userId', ParseIntPipe) id: number) {
+    this.logger.log(`Try to update user avatar`)
+    try {
+      const response = await this.userService.getUserAvatar(id);
+      if (response) {
+        res.redirect(response)
+      } else {
+        res.status(404).send('Avatar not found');
+      }
+    } catch (error) {
+      res.status(500).send(`Internal server error: ${error}`)
+    }
+
+  }
+
+  @Patch('profile/avatar')
+  @Auth()
+  @UseInterceptors(FileInterceptor('avatar'))
+  async updateUserAvatar(@GetCurrentUserId() id: number, @UploadedFile() avatar: any) {
+    this.logger.log(`Try to update user avatar`)
+    return await this.userService.updateUserAvatar(id, avatar);
   }
 
   @Get(':userId')

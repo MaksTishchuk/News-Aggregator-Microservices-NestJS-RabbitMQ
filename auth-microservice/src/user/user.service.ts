@@ -5,13 +5,16 @@ import {ILike, In, Repository} from "typeorm";
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {RpcException} from "@nestjs/microservices";
+import {createFile, removeFile} from "../utils/file.actions";
+import {ConfigService} from "@nestjs/config";
 
 @Injectable()
 export class UserService {
 
   constructor(
     @InjectRepository(UserEntity)
-    private userRepository: Repository<UserEntity>
+    private userRepository: Repository<UserEntity>,
+    private configService: ConfigService
   ) {}
 
   async getAllUsers(): Promise<UserEntity[]> {
@@ -20,7 +23,7 @@ export class UserService {
 
   async searchUsers(searchUsersDto: SearchUsersDto): Promise<UserEntity[]> {
     if (!searchUsersDto.username && !searchUsersDto.email) {
-      throw new RpcException(new BadRequestException('Search fields should not be empty!'));
+      throw new RpcException(new BadRequestException('Search fields should not be empty!'))
     }
     const users = await this.userRepository.findBy([
       { username: ILike(`%${searchUsersDto.username}%`) },
@@ -53,6 +56,10 @@ export class UserService {
   }
 
   async updateUserProfile(updateUserProfileDto: UpdateUserProfileDto): Promise<UserEntity> {
+    if (updateUserProfileDto.avatar) {
+      const user = await this.getUserById(updateUserProfileDto.id)
+      removeFile(user.avatar)
+    }
     const updatedUser = await this.userRepository.createQueryBuilder()
       .update<UserEntity>(UserEntity, updateUserProfileDto)
       .where('id = :id', {id: updateUserProfileDto.id})
@@ -66,6 +73,21 @@ export class UserService {
     return updatedUser.raw[0]
   }
 
+  async getUserAvatar(id: number) {
+    const user = await this.getUserById(id)
+    const url = this.configService.get<string>('SERVER_URL')
+    const avatarURL = url + '/images/' + user.avatar
+    return avatarURL
+  }
+
+  async updateUserAvatar(payload) {
+    if (payload.avatar) {
+      const avatar = createFile(payload.avatar);
+      return await this.updateUserProfile({id: payload.id, avatar})
+    }
+    return await this.getUserById(payload.id)
+  }
+
   async deleteUser(id: number) {
     const result = await this.userRepository.delete({ id });
     if (!result.affected) {
@@ -76,7 +98,7 @@ export class UserService {
 
   async subscribeOnUser(userId: number, subscriptionUserId: number) {
     if (userId === subscriptionUserId) {
-      throw new BadRequestException(`A user cannot subscribe to himself!`);
+      throw new RpcException(new BadRequestException(`A user cannot subscribe to himself!`))
     }
     const users = await this.userRepository.find({
       where: {id: In([userId, subscriptionUserId])},
@@ -87,9 +109,9 @@ export class UserService {
       if (findUser.id === subscriptionUserId) subscriptionUser = findUser
       else if (findUser.id === userId) user = findUser
     }
-    if (!subscriptionUser) throw new NotFoundException(
+    if (!subscriptionUser) throw new RpcException(new NotFoundException(
       `User with id ${subscriptionUserId} was not found! Subscription failed!`
-    )
+    ))
     if (subscriptionUser.subscribers.find(subscriber => subscriber.id === user.id)) {
       subscriptionUser.subscribers = subscriptionUser.subscribers.filter(
         (subscriber) => subscriber.id !== user.id

@@ -35,6 +35,16 @@ export class UserService {
     return await lastValueFrom(response)
   }
 
+  async getUserAvatar(id: number) {
+    const response = await this.clientAuth.send('get-user-avatar', { id })
+    return await lastValueFrom(response)
+  }
+
+  async updateUserAvatar(id: number, avatar) {
+    const response = this.clientAuth.send('update-user-avatar', {id, avatar})
+    return await lastValueFrom(response)
+  }
+
   async deleteUser(id: number) {
     const response = this.clientAuth.send('delete-user', id)
     return await lastValueFrom(response)

@@ -20,7 +20,4 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @IsEnum(GenderEnum)
   gender?: GenderEnum;
-
-  @IsOptional()
-  avatar?: any
 }

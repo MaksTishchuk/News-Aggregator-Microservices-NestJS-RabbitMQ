@@ -81,6 +81,34 @@ export class UserController {
     }
   }
 
+  @MessagePattern('get-user-avatar')
+  async getUserAvatar(@Payload() payload, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to get user avatar`)
+      const avatarUrl = await this.userService.getUserAvatar(payload.id);
+      return avatarUrl
+    } finally {
+      this.logger.log(`Get user avatar success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
+  @MessagePattern('update-user-avatar')
+  async updateUserAvatar(@Payload() payload, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to update user avatar`)
+      const avatarPath = await this.userService.updateUserAvatar(payload);
+      return avatarPath
+    } finally {
+      this.logger.log(`Update user avatar success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
   @MessagePattern('delete-user')
   async deleteUser(@Payload() id: number, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();

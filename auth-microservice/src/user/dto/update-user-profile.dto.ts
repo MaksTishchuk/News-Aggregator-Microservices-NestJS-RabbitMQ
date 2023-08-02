@@ -24,5 +24,5 @@ export class UpdateUserProfileDto {
   gender?: GenderEnum;
 
   @IsOptional()
-  avatar?: any
+  avatar?: string;
 }
