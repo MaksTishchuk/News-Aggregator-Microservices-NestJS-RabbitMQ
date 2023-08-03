@@ -34,4 +34,14 @@ export class ClientProxyRMQ {
     })
   }
 
+  getClientProxyLoggerInstance(): ClientProxy {
+    return ClientProxyFactory.create({
+      transport: Transport.RMQ,
+      options: {
+        urls: [`amqp://${this.user}:${this.password}@${this.url}`],
+        queue: 'logger'
+      }
+    })
+  }
+
 }

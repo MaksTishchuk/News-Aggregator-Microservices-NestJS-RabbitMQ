@@ -4,7 +4,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
-    restart: always
+    restart: unless-stopped
     hostname: rabbitmq
     ports:
       - '5672:5672'
@@ -83,7 +83,7 @@ services:
 #    depends_on:
 #      - rabbitmq
 #    volumes:
-#      - ./news-microservice:/usr/src/app # any change to base folder should be reflected
+#      - ./news-microservice:/usr/src/app
 #      - /usr/src/app/node_modules
 #    networks:
 #      - news-microservice
@@ -119,12 +119,46 @@ services:
       - auth-microservice
 #      - news-microservice
 
+  logger_microservice:
+    container_name: logger_microservice
+    build:
+      context: ./logger-microservice
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./logger-microservice/.env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./logger-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - logger-microservice
+      - backend
+
+  db-logger:
+    image: mongo:latest
+    restart: unless-stopped
+    container_name: db-logger
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: maks
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: logger
+    volumes:
+      - mongo_logger:/data_logger/logger/mongo
+    networks:
+      - logger-microservice
+
 networks:
   auth-microservice:
 #  news-microservice:
+  logger-microservice:
   backend:
 
 volumes:
   postgres_auth:
 #  postgres_news:
   pgadmin:
+  mongo_logger:
