@@ -1,5 +1,5 @@
 import { GenderEnum } from '../entities/enum/gender.enum';
-import {IsNumber, IsOptional} from 'class-validator';
+import {IsEnum, IsNumber, IsOptional} from 'class-validator';
 
 export class UpdateUserProfileDto {
   @IsNumber()
@@ -21,6 +21,7 @@ export class UpdateUserProfileDto {
   city?: string;
 
   @IsOptional()
+  @IsEnum(GenderEnum)
   gender?: GenderEnum;
 
   @IsOptional()

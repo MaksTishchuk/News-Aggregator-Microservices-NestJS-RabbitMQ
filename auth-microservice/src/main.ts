@@ -7,7 +7,6 @@ import {Logger, ValidationPipe} from "@nestjs/common";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const configService = app.get<ConfigService>(ConfigService)
-  console.log(`amqp://${configService.get<string>('RMQ_USER')}:${configService.get<string>('RMQ_PASSWORD')}@${configService.get<string>('RMQ_URL')}`)
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
