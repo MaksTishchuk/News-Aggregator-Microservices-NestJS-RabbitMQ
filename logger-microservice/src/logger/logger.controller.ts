@@ -15,12 +15,10 @@ export class LoggerController {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
-      console.log('DTO: ', dto)
       await this.loggerService.createLog(dto)
       await channel.ack(originalMessage)
     } catch (error) {
-      // this.logger.error(`Error: ${JSON.stringify(error)}`);
-      console.log(error)
+      this.logger.error(`Error: ${JSON.stringify(error)}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
       }

@@ -13,7 +13,7 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @MessagePattern('get-all-users')
-  async getOrderById(@Ctx() context: RmqContext) {
+  async getAllUsers(@Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -21,7 +21,7 @@ export class UserController {
       const users = await this.userService.getAllUsers();
       return users
     } finally {
-      this.logger.log(`Get all users success`)
+      this.logger.log(`GetAllUsers: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -35,7 +35,7 @@ export class UserController {
       const users = await this.userService.searchUsers(dto);
       return users
     } finally {
-      this.logger.log(`Search users success`)
+      this.logger.log(`SearchUsers: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -49,7 +49,7 @@ export class UserController {
       const user = await this.userService.getUserById(id);
       return user;
     } finally {
-      this.logger.log(`Get user success`)
+      this.logger.log(`GetUserById: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -63,7 +63,7 @@ export class UserController {
       const user = await this.userService.getUserProfile(id);
       return user;
     } finally {
-      this.logger.log(`Get user profile success`)
+      this.logger.log(`GetUserProfile: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -77,7 +77,7 @@ export class UserController {
       const user = await this.userService.updateUserProfile(dto);
       return user
     } finally {
-      this.logger.log(`Update user profile success`)
+      this.logger.log(`UpdateProfile: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -91,7 +91,7 @@ export class UserController {
       const avatarUrl = await this.userService.getUserAvatar(payload.id);
       return avatarUrl
     } finally {
-      this.logger.log(`Get user avatar success`)
+      this.logger.log(`GetUserAvatar: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -105,7 +105,7 @@ export class UserController {
       const avatarPath = await this.userService.updateUserAvatar(payload);
       return avatarPath
     } finally {
-      this.logger.log(`Update user avatar success`)
+      this.logger.log(`UpdateUserAvatar: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
@@ -118,11 +118,12 @@ export class UserController {
       this.logger.log(`Try to delete user`)
       await this.userService.deleteUser(id)
       await channel.ack(originalMessage)
-      this.logger.log(`Delete user success`)
+      this.logger.log(`DeleteUser: Acknowledge message success`)
     } catch (error) {
       this.logger.error(`Error: ${JSON.stringify(error)}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
+        this.logger.log(`DeleteUser: Acknowledge message success`)
       }
     }
   }
@@ -136,7 +137,7 @@ export class UserController {
       const user = await this.userService.subscribeOnUser(payload.userId, payload.subscriptionUserId);
       return user;
     } finally {
-      this.logger.log(`Subscribe on user success`)
+      this.logger.log(`SubscribeOnUser: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }

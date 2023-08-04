@@ -5,7 +5,7 @@ import {LoginDto} from "./dto/login.dto";
 import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {LoggerDto} from "../common/dto/logger.dto";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
-import {MicroservicesEnum} from "../common/enums/microservices.enum";
+import {makeLoggerPayload} from "../common/utils/logger.payload";
 
 @Controller('auth')
 export class AuthController {
@@ -20,12 +20,10 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     this.logger.log(`Try to register user`)
-    const payload: LoggerDto = {
-      type: LogTypeEnum.action,
-      microservice: MicroservicesEnum.apiGateway,
-      message: 'Try to register user',
-      additionalInfo: ''
-    }
+    const payload: LoggerDto = makeLoggerPayload(
+      LogTypeEnum.action,
+      `Try to register user with email: ${dto.email}`
+    )
     this.clientLogger.emit('create-log', payload)
     return await this.authService.register(dto)
   }
@@ -33,6 +31,11 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto) {
     this.logger.log(`Try to login user`)
+    const payload: LoggerDto = makeLoggerPayload(
+      LogTypeEnum.action,
+      `Try to login user with email: ${dto.email}`
+    )
+    this.clientLogger.emit('create-log', payload)
     return await this.authService.login(dto);
   }
 }

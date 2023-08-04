@@ -7,27 +7,38 @@ import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {RpcException} from "@nestjs/microservices";
 import {createFile, removeFile} from "../utils/file.actions";
 import {ConfigService} from "@nestjs/config";
+import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
+import {LoggerDto} from "../utils/dto/logger.dto";
+import {makeLoggerPayload} from "../utils/logger.payload";
+import {LogTypeEnum} from "../utils/enums/log-type.enum";
 
 @Injectable()
 export class UserService {
+  private clientLogger = this.clientProxyRMQ.getClientProxyLoggerInstance()
 
   constructor(
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
   async getAllUsers(): Promise<UserEntity[]> {
     return await this.userRepository.find({order: {createdAt: 'desc'}})
   }
 
-  async searchUsers(searchUsersDto: SearchUsersDto): Promise<UserEntity[]> {
-    if (!searchUsersDto.username && !searchUsersDto.email) {
+  async searchUsers(dto: SearchUsersDto): Promise<UserEntity[]> {
+    if (!dto.username && !dto.email) {
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.error,
+        `SearchUsers: Search fields should not be empty!`
+      )
+      this.clientLogger.emit('create-log', payload)
       throw new RpcException(new BadRequestException('Search fields should not be empty!'))
     }
     const users = await this.userRepository.findBy([
-      { username: ILike(`%${searchUsersDto.username}%`) },
-      { email: ILike(`%${searchUsersDto.email}%`) },
+      { username: ILike(`%${dto.username}%`) },
+      { email: ILike(`%${dto.email}%`) },
     ]);
     return users
   }
@@ -37,7 +48,14 @@ export class UserService {
       where: {id},
       relations: ['subscribers', 'subscriptions']
     })
-    if (!user) throw new RpcException(new NotFoundException('User was not found!'))
+    if (!user) {
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.error,
+        `GetUserById: User with id "${id}" was not found!`
+      )
+      this.clientLogger.emit('create-log', payload)
+      throw new RpcException(new NotFoundException(`User with id "${id}" was not found!`))
+    }
     return user
   }
 
@@ -51,19 +69,24 @@ export class UserService {
     return profile
   }
 
-  async updateUserProfile(updateUserProfileDto: UpdateUserProfileDto): Promise<UserEntity> {
-    if (updateUserProfileDto.avatar) {
-      const user = await this.getUserById(updateUserProfileDto.id)
+  async updateUserProfile(dto: UpdateUserProfileDto): Promise<UserEntity> {
+    if (dto.avatar) {
+      const user = await this.getUserById(dto.id)
       removeFile(user.avatar)
     }
     const updatedUser = await this.userRepository.createQueryBuilder()
-      .update<UserEntity>(UserEntity, updateUserProfileDto)
-      .where('id = :id', {id: updateUserProfileDto.id})
+      .update<UserEntity>(UserEntity, dto)
+      .where('id = :id', {id: dto.id})
       .returning('*')
       .updateEntity(true)
       .execute()
     if (!updatedUser.affected) {
-      throw new RpcException(new BadRequestException(`User with id "${updateUserProfileDto.id}" has not been updated!`))
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.error,
+        `UpdateUserProfile: User with id "${dto.id}" has not been updated!`
+      )
+      this.clientLogger.emit('create-log', payload)
+      throw new RpcException(new BadRequestException(`User with id "${dto.id}" has not been updated!`))
     }
     delete updatedUser.raw[0].password
     return updatedUser.raw[0]
@@ -85,13 +108,28 @@ export class UserService {
   async deleteUser(id: number) {
     const result = await this.userRepository.delete({ id })
     if (!result.affected) {
-      throw new RpcException(new BadRequestException(`User with id ${id} was not deleted!`))
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.warning,
+        `DeleteUser: User with id "${id}" was not deleted!`
+      )
+      this.clientLogger.emit('create-log', payload)
+      throw new RpcException(new BadRequestException(`User with id "${id}" was not deleted!`))
     }
+    const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.action,
+        `DeleteUser: User with id "${id}" has been deleted!`
+      )
+      this.clientLogger.emit('create-log', payload)
   }
 
   async subscribeOnUser(userId: number, subscriptionUserId: number) {
     if (userId === subscriptionUserId) {
-      throw new RpcException(new BadRequestException(`A user cannot subscribe to himself!`))
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.warning,
+        `SubscribeOnUser: User with id "${userId}" cannot subscribe to himself!`
+      )
+      this.clientLogger.emit('create-log', payload)
+      throw new RpcException(new BadRequestException(`User with id "${userId}" cannot subscribe to himself!`))
     }
     const users = await this.userRepository.find({
       where: {id: In([userId, subscriptionUserId])},
@@ -102,15 +140,32 @@ export class UserService {
       if (findUser.id === subscriptionUserId) subscriptionUser = findUser
       else if (findUser.id === userId) user = findUser
     }
-    if (!subscriptionUser) throw new RpcException(new NotFoundException(
-      `User with id ${subscriptionUserId} was not found! Subscription failed!`
-    ))
+    if (!subscriptionUser) {
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.warning,
+        `SubscribeOnUser: User with id ${subscriptionUserId} was not found!`
+      )
+      this.clientLogger.emit('create-log', payload)
+      throw new RpcException(new NotFoundException(
+        `User with id ${subscriptionUserId} was not found!`
+      ))
+    }
     if (subscriptionUser.subscribers.find(subscriber => subscriber.id === user.id)) {
       subscriptionUser.subscribers = subscriptionUser.subscribers.filter(
         (subscriber) => subscriber.id !== user.id
       )
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.action,
+        `SubscribeOnUser: User with id "${userId}" unsubscribed from user with id "${subscriptionUserId}"!`
+      )
+      this.clientLogger.emit('create-log', payload)
     } else {
       subscriptionUser.subscribers.push(user)
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.action,
+        `SubscribeOnUser: User with id "${userId}" subscribe on user with id "${subscriptionUserId}"!`
+      )
+      this.clientLogger.emit('create-log', payload)
     }
     return await this.userRepository.save(subscriptionUser)
   }

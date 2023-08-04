@@ -19,7 +19,7 @@ export class AuthController {
       const result = await this.authService.register(dto)
       return result
     } finally {
-      this.logger.log(`Register success`)
+      this.logger.log(`Register: Acknowledge message success`)
       await channel.ack(originalMessage)
     }
   }
@@ -33,7 +33,7 @@ export class AuthController {
       const result = await this.authService.login(dto)
       return result
     } finally {
-      this.logger.log(`Login success`)
+      this.logger.log(`Login: Acknowledge message success`)
       await channel.ack(originalMessage)
     }
   }
