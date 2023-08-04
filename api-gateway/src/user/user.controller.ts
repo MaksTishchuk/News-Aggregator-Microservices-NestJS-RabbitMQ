@@ -22,6 +22,7 @@ import {LoggerDto} from "../common/dto/logger.dto";
 import {makeLoggerPayload} from "../common/utils/logger.payload";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
 import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
+import {PaginationDto} from "../common/dto/pagination.dto";
 
 @Controller('users')
 export class UserController {
@@ -31,9 +32,9 @@ export class UserController {
   constructor(private userService: UserService, private clientProxyRMQ: ClientProxyRMQ) {}
 
   @Get('')
-  async getAllUsers() {
+  async getAllUsers(@Query() paginationDto: PaginationDto) {
     this.logger.log(`Try to get all users`)
-    return await this.userService.getAllUsers();
+    return await this.userService.getAllUsers(paginationDto);
   }
 
   @Get('search')

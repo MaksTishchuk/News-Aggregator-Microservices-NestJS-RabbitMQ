@@ -3,6 +3,7 @@ import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {lastValueFrom} from "rxjs";
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
+import {PaginationDto} from "../common/dto/pagination.dto";
 
 @Injectable()
 export class UserService {
@@ -10,8 +11,8 @@ export class UserService {
 
   private clientAuth = this.clientProxyRMQ.getClientProxyAuthInstance()
 
-  async getAllUsers() {
-    const response = this.clientAuth.send('get-all-users', '')
+  async getAllUsers(paginationDto: PaginationDto) {
+    const response = this.clientAuth.send('get-all-users', paginationDto)
     return await lastValueFrom(response)
   }
 

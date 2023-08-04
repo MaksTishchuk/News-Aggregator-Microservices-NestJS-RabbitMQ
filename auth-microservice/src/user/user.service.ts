@@ -11,6 +11,8 @@ import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {LoggerDto} from "../utils/dto/logger.dto";
 import {makeLoggerPayload} from "../utils/logger.payload";
 import {LogTypeEnum} from "../utils/enums/log-type.enum";
+import {PaginationDto} from "../utils/dto/pagination.dto";
+import {getPagination} from "../utils/pagination";
 
 @Injectable()
 export class UserService {
@@ -23,8 +25,11 @@ export class UserService {
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
-  async getAllUsers(): Promise<UserEntity[]> {
-    return await this.userRepository.find({order: {createdAt: 'desc'}})
+  async getAllUsers(dto: PaginationDto): Promise<UserEntity[]> {
+    const {perPage, skip} = getPagination(dto)
+    return await this.userRepository.find(
+      {order: {createdAt: 'desc'}, take: perPage, skip},
+    )
   }
 
   async searchUsers(dto: SearchUsersDto): Promise<UserEntity[]> {

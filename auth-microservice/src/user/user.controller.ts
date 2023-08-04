@@ -4,6 +4,7 @@ import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/mi
 import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {AckErrors} from "../utils/ack-errors";
+import {PaginationDto} from "../utils/dto/pagination.dto";
 
 @Controller()
 export class UserController {
@@ -13,12 +14,12 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @MessagePattern('get-all-users')
-  async getAllUsers(@Ctx() context: RmqContext) {
+  async getAllUsers(@Payload() dto: PaginationDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get users`)
-      const users = await this.userService.getAllUsers();
+      const users = await this.userService.getAllUsers(dto);
       return users
     } finally {
       this.logger.log(`GetAllUsers: Acknowledge message success`)
