@@ -137,7 +137,7 @@ services:
       - backend
 
   db-logger:
-    image: mongo:latest
+    image: mongo
     restart: unless-stopped
     container_name: db-logger
     ports:
@@ -148,6 +148,19 @@ services:
       MONGO_INITDB_DATABASE: logger
     volumes:
       - mongo_logger:/data_logger/logger/mongo
+    networks:
+      - logger-microservice
+
+  db-logger-mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    container_name: db-logger-mongo-express
+    ports:
+      - 8083:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: maks
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://maks:password@db-logger:27017/logger?authSource=admin
     networks:
       - logger-microservice
 
