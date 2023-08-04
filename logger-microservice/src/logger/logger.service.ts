@@ -17,7 +17,7 @@ export class LoggerService {
   }
 
   makeLog(dto: LoggerDto) {
-    const additionalInfo = dto.additionalInfo ? `: ${dto.additionalInfo}` :  ''
+    const additionalInfo = dto.additionalInfo ? `- ${dto.additionalInfo}` :  ''
     switch (dto.type) {
       case LogTypeEnum.action:
         this.logger.log(`${dto.message} ${additionalInfo}`, dto.microservice)
