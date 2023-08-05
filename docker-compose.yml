@@ -72,37 +72,37 @@ services:
     networks:
       - auth-microservice
 
-#  news_microservice:
-#    container_name: news_microservice
-#    build:
-#      context: ./news-microservice
-#      dockerfile: ./Dockerfile
-#    restart: unless-stopped
-#    env_file:
-#      - ./news-microservice/.env
-#    depends_on:
-#      - rabbitmq
-#    volumes:
-#      - ./news-microservice:/usr/src/app
-#      - /usr/src/app/node_modules
-#    networks:
-#      - news-microservice
-#      - backend
-#
-#  db-news:
-#    image: postgres
-#    restart: unless-stopped
-#    container_name: db-news
-#    expose:
-#      - "5432"
-#    environment:
-#      POSTGRES_USER: maks
-#      POSTGRES_PASSWORD: password
-#      POSTGRES_DB: news
-#    volumes:
-#      - postgres_news:/data_news/news/postgres
-#    networks:
-#      - news-microservice
+  news_microservice:
+    container_name: news_microservice
+    build:
+      context: ./news-microservice
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./news-microservice/.env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./news-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - news-microservice
+      - backend
+
+  db-news:
+    image: postgres
+    restart: unless-stopped
+    container_name: db-news
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_USER: maks
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: news
+    volumes:
+      - postgres_news:/data_news/news/postgres
+    networks:
+      - news-microservice
 
   dbadmin:
     image: dpage/pgadmin4
@@ -166,12 +166,12 @@ services:
 
 networks:
   auth-microservice:
-#  news-microservice:
+  news-microservice:
   logger-microservice:
   backend:
 
 volumes:
   postgres_auth:
-#  postgres_news:
+  postgres_news:
   pgadmin:
   mongo_logger:
