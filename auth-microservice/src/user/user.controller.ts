@@ -41,6 +41,20 @@ export class UserController {
     }
   }
 
+  @MessagePattern('get-users-by-ids')
+  async getUsersByIds(@Payload() ids: [], @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to get users by ids`)
+      const users = await this.userService.getUsersByIds(ids);
+      return users
+    } finally {
+      this.logger.log(`GetUsersByIds: Acknowledge message success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
   @MessagePattern('get-user-by-id')
   async getUserById(@Payload() id: number, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
@@ -51,6 +65,20 @@ export class UserController {
       return user;
     } finally {
       this.logger.log(`GetUserById: Acknowledge message success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
+  @MessagePattern('get-short-user-info-by-id')
+  async getShortUserInfoById(@Payload() id: number, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to get short user info`)
+      const user = await this.userService.getShortUserInfoById(id);
+      return user;
+    } finally {
+      this.logger.log(`GetShortUserInfoById: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }

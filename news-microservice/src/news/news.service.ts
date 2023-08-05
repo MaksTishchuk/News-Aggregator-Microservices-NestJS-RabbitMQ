@@ -45,9 +45,7 @@ export class NewsService {
   }
 
   async findAllNews(dto: PaginationDto): Promise<NewsEntity[]> {
-    console.log(dto)
     const {perPage, skip} = getPagination(dto)
-    console.log(perPage, skip)
     return await this.newsRepository.find({
       relations: ['comments'],
       order: { createdAt: 'DESC' },
@@ -57,19 +55,13 @@ export class NewsService {
   }
 
   async searchNews(dto: SearchNewsDto) {
-    console.log(dto)
     const {perPage, skip} = getPagination(dto)
-    console.log(perPage, skip)
     const qb = this.newsRepository.createQueryBuilder('n');
     qb.take(perPage);
     qb.skip(skip);
     qb.orderBy('id', 'DESC');
-    if (dto.title) {
-      qb.orWhere(`n.title ILIKE :title`);
-    }
-    if (dto.body) {
-      qb.orWhere(`n.body ILIKE :body`);
-    }
+    if (dto.title) qb.orWhere(`n.title ILIKE :title`);
+    if (dto.body) qb.orWhere(`n.body ILIKE :body`);
     qb.setParameters({
       title: `%${dto.title}%`,
       body: `%${dto.body}%`,

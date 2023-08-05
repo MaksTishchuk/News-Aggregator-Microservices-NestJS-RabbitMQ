@@ -48,10 +48,35 @@ export class UserService {
     return users
   }
 
+  async getUsersByIds(ids: []): Promise<UserEntity[]> {
+    return await this.userRepository.find(
+      {
+        where: {id: In(ids)},
+        select: ['id', 'email', 'username', 'avatar', 'firstName', 'lastName']
+      }
+    )
+  }
+
   async getUserById(id: number): Promise<UserEntity> {
     const user = await this.userRepository.findOne({
       where: {id},
       relations: ['subscribers', 'subscriptions']
+    })
+    if (!user) {
+      const payload: LoggerDto = makeLoggerPayload(
+        LogTypeEnum.error,
+        `GetUserById: User with id "${id}" was not found!`
+      )
+      this.clientLogger.emit('create-log', payload)
+      throw new RpcException(new NotFoundException(`User with id "${id}" was not found!`))
+    }
+    return user
+  }
+
+  async getShortUserInfoById(id: number): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({
+      where: {id},
+      select: ['id', 'email', 'username', 'avatar', 'firstName', 'lastName']
     })
     if (!user) {
       const payload: LoggerDto = makeLoggerPayload(
