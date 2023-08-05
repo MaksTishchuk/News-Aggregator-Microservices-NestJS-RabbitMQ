@@ -30,14 +30,7 @@ export class TimeoutInterceptor implements NestInterceptor {
           this.clientLogger.emit('create-log', payload)
           return throwError(() => new RequestTimeoutException());
         }
-        const payload: LoggerDto = {
-            type: LogTypeEnum.error,
-            microservice: MicroservicesEnum.apiGateway,
-            message: `[Error] url: ${url}, method: ${method}`,
-            additionalInfo: `${err}`
-          }
-          this.clientLogger.emit('create-log', payload)
-        return throwError(() => new Error());
+        return throwError(err);
       })
     )
   }

@@ -117,7 +117,7 @@ services:
       - pgadmin:/root/.pgadmin
     networks:
       - auth-microservice
-#      - news-microservice
+      - news-microservice
 
   logger_microservice:
     container_name: logger_microservice

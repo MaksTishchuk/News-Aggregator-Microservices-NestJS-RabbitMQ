@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import {UserService} from "./user.service";
 import {SearchUsersDto} from "./dto/search-users.dto";
-import {Auth} from "../auth/decorators/auth.decorator";
 import {GetCurrentUserId} from "../auth/decorators/get-current-user-id.decorator";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";

@@ -13,12 +13,11 @@ async function bootstrap() {
       urls: [
         `amqp://${configService.get<string>('RMQ_USER')}:${configService.get<string>('RMQ_PASSWORD')}@${configService.get<string>('RMQ_URL')}`,
       ],
-      queue: 'auth',
+      queue: 'news',
       noAck: false,
       queueOptions: {
         durable: true
-      },
-
+      }
     }
   })
   app.useGlobalPipes(new ValidationPipe())

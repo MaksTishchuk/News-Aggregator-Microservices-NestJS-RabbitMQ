@@ -3,6 +3,8 @@ import {ConfigModule, ConfigService} from "@nestjs/config";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {getTypeOrmConfig} from "./config/typeorm.config";
 import { ProxyRmqModule } from './proxy-rmq/proxy-rmq.module';
+import { NewsModule } from './news/news.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { ProxyRmqModule } from './proxy-rmq/proxy-rmq.module';
       useFactory: getTypeOrmConfig
     }),
     ProxyRmqModule,
+    NewsModule,
+    CommentsModule,
   ]
 })
 export class AppModule {}
