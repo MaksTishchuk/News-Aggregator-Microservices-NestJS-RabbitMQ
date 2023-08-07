@@ -32,6 +32,11 @@ export class UserService {
     )
   }
 
+  async getUserSubscriptions(id: number): Promise<UserEntity[]> {
+    const user = await this.getUserById(id)
+    return user.subscriptions
+  }
+
   async searchUsers(dto: SearchUsersDto): Promise<UserEntity[]> {
     if (!dto.username && !dto.email) {
       const payload: LoggerDto = makeLoggerPayload(
@@ -199,4 +204,5 @@ export class UserService {
     }
     return await this.userRepository.save(subscriptionUser)
   }
+
 }

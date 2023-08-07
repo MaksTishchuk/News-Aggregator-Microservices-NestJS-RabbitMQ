@@ -1,7 +1,7 @@
 import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from "@nestjs/typeorm";
 import {NewsEntity} from "../entities/news.entity";
-import {Repository} from "typeorm";
+import {In, Repository} from "typeorm";
 import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {CreateNewsDto} from "./dto/create-news.dto";
 import {makeLoggerPayload} from "../common/logger.payload";
@@ -116,6 +116,17 @@ export class NewsService {
         `News with id "${dto.id}" was not updated! Access denied!`,
       ));
     }
+  }
+
+  async getUserSubscriptionsNews(payload) {
+    const {perPage, skip} = getPagination(payload.pagination)
+    return await this.newsRepository.find({
+      where: {authorId: In(payload.authorIds)},
+      relations: ['comments'],
+      order: {createdAt: 'DESC'},
+      take: perPage,
+      skip
+    });
   }
 
   async deleteNews(dto: DeleteNewsDto) {

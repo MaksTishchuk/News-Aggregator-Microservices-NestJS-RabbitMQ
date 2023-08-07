@@ -28,7 +28,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       error: {
-        message: message.message,
+        message: message.message ? message.message : message,
         name: message.name,
         status,
       },

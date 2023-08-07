@@ -39,6 +39,13 @@ export class NewsController {
     return await this.newsService.findAllNews(dto);
   }
 
+  @Get('user-subscriptions-news')
+  @UseGuards(JwtAuthGuard)
+  async getUserSubscriptionNews(@GetCurrentUserId() userId: number, @Query() dto: PaginationDto) {
+    this.logger.log(`Try to get user subscription news`)
+    return await this.newsService.getUserSubscriptionNews(userId, dto);
+  }
+
   @Get('search')
   searchUsers(@Query() dto: SearchNewsDto) {
     this.logger.log(`Try to search news`)

@@ -27,6 +27,20 @@ export class UserController {
     }
   }
 
+  @MessagePattern('user-subscriptions')
+  async getUserSubscriptions(@Payload() id: number, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to get user subscriptions ids`)
+      const users = await this.userService.getUserSubscriptions(id);
+      return users
+    } finally {
+      this.logger.log(`GetUserSubscriptions: Acknowledge message success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
   @MessagePattern('search-users')
   async searchUsers(@Payload() dto: SearchUsersDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();

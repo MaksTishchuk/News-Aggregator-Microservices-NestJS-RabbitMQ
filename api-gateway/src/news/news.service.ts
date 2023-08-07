@@ -25,6 +25,19 @@ export class NewsService {
     return await this.addAuthorToNewsArray(news)
   }
 
+  async getUserSubscriptionNews(userId: number, dto: PaginationDto) {
+    const userSubscriptionsResponse = this.clientAuth.send('user-subscriptions', userId)
+    const userSubscriptions = await lastValueFrom(userSubscriptionsResponse)
+    const authorIds = userSubscriptions.map((user) => user.id)
+    const newsResponse = this.clientNews.send('user-subscriptions-news', {authorIds, pagination: dto})
+    const news = await lastValueFrom(newsResponse)
+    return news.map((news) => {
+      const author = userSubscriptions.find((author) => author.id === news.authorId);
+      if (author) news.author = author
+      return news;
+    })
+  }
+
   async searchNews(dto: SearchNewsDto) {
     const response = this.clientNews.send('search-news', dto)
     const newsResponse = await lastValueFrom(response)
@@ -60,9 +73,9 @@ export class NewsService {
     const authorResponse = this.clientAuth.send('get-users-by-ids', authorIds)
     const authors = await lastValueFrom(authorResponse)
     return news.map((news) => {
-        const author = authors.find((author) => author.id === news.authorId);
-        if (author) news.author = author
-        return news;
-      })
+      const author = authors.find((author) => author.id === news.authorId);
+      if (author) news.author = author
+      return news;
+    })
   }
 }

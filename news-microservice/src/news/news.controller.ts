@@ -41,6 +41,20 @@ export class NewsController {
     }
   }
 
+  @MessagePattern('user-subscriptions-news')
+  async getUserSubscriptionsNews(@Payload() payload, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to get user subscriptions news`)
+      const news = await this.newsService.getUserSubscriptionsNews(payload);
+      return news
+    } finally {
+      this.logger.log(`GetUserSubscriptionNews: Acknowledge message success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
   @MessagePattern('search-news')
   async searchNews(@Payload() dto: SearchNewsDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
