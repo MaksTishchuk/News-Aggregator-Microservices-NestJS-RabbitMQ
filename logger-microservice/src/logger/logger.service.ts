@@ -4,6 +4,8 @@ import {LoggerDocument, LoggerModel} from "./models/logger.model";
 import {Model} from "mongoose";
 import {LoggerDto} from "./dto/logger.dto";
 import {LogTypeEnum} from "./models/enums/log-type.enum";
+import {getPagination} from "../common/pagination";
+import {LogsTypeDto} from "./dto/logs-type.dto";
 
 @Injectable()
 export class LoggerService {
@@ -12,8 +14,33 @@ export class LoggerService {
   constructor(@InjectModel(LoggerModel.name) private readonly loggerModel: Model<LoggerDocument>) {}
 
   async createLog(dto: LoggerDto) {
-    await this.loggerModel.create({...dto})
+    await this.loggerModel.create({...dto, createdAt: Date.now()})
     this.makeLog(dto)
+  }
+
+  async getAllLogs(dto: LogsTypeDto) {
+    const {perPage, skip} = getPagination(dto)
+    let filter = {}
+    if (dto.type) filter = {type: dto.type}
+    return this.loggerModel.find(filter)
+      .sort({createdAt: 'desc'})
+      .select('-__v')
+      .limit(perPage)
+      .skip(skip);
+  }
+
+  async clearLogs(dto: LogsTypeDto) {
+    let filter = {}
+    let info = ''
+    if (dto.type) {
+      filter = {type: dto.type}
+      info = ` Type to delete: ${dto.type}!`
+    }
+    await this.loggerModel.deleteMany(filter).then(() => {
+      this.logger.log(`Logs successfully cleared!${info}`, LoggerService.name)
+    }).catch((error) => {
+      this.logger.error(error)
+    })
   }
 
   makeLog(dto: LoggerDto) {
@@ -32,4 +59,5 @@ export class LoggerService {
         break
     }
   }
+
 }

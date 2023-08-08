@@ -6,6 +6,8 @@ import { ProxyRmqModule } from './proxy-rmq/proxy-rmq.module';
 import {AppController} from "./app.controller";
 import {AppService} from "./app.service";
 import { UserModule } from './user/user.module';
+import {LoggerModule} from "./logger/logger.module";
+
 
 @Module({
   imports: [
@@ -13,7 +15,8 @@ import { UserModule } from './user/user.module';
     AuthModule,
     NewsModule,
     ProxyRmqModule,
-    UserModule
+    UserModule,
+    LoggerModule
   ],
   controllers: [AppController],
   providers: [AppService],
