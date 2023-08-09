@@ -52,14 +52,16 @@ export class NewsService {
     const newsResponse = this.clientNews.send('find-one-news', id)
     let news = await lastValueFrom(newsResponse)
     news = await this.addAuthorToNews(news)
-    if (news.isImages) await this.addImagesToNews(news)
+    news = await this.addImagesToNews(news)
     return news
   }
 
-  async updateNews(id: number, authorId: number, dto: UpdateNewsDto) {
-    const newsResponse = this.clientNews.send('update-news', {id, authorId, ...dto})
-    const news = await lastValueFrom(newsResponse)
-    return await this.addAuthorToNews(news)
+  async updateNews(id: number, authorId: number, dto: UpdateNewsDto, images) {
+    const newsResponse = this.clientNews.send('update-news', {newsDto: {id, authorId, ...dto}, images: images ? images.images : undefined})
+    let news = await lastValueFrom(newsResponse)
+    news = await this.addAuthorToNews(news)
+    news = await this.addImagesToNews(news)
+    return news
   }
 
   async deleteNews(id: number, authorId: number) {
@@ -74,8 +76,10 @@ export class NewsService {
   }
 
   private async addImagesToNews(news) {
-    const imagesResponse = this.clientFiles.send('get-images-by-news-id', news.id)
-    news.images = await lastValueFrom(imagesResponse)
+    if (news.isImages) {
+      const imagesResponse = this.clientFiles.send('get-images-by-news-id', news.id)
+      news.images = await lastValueFrom(imagesResponse)
+    } else news.images = []
     return news
   }
 

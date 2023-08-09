@@ -54,4 +54,36 @@ export class FilesController {
       await channel.ack(originalMessage);
     }
   }
+
+  @MessagePattern('update-images')
+  async updateNewsImages(@Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to update news images urls`)
+      const response = await this.filesService.updateNewsImages(payload.newsId, payload.images)
+      return response;
+    } finally {
+      this.logger.log(`UpdateNewsImages: Acknowledge message success`)
+      await channel.ack(originalMessage);
+    }
+  }
+
+  @EventPattern('delete-images')
+  async deleteImages(@Payload() newsId, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    try {
+      this.logger.log(`Try to delete images`)
+      await this.filesService.deleteImages(newsId)
+      await channel.ack(originalMessage)
+      this.logger.log(`DeleteImages: Acknowledge message success`)
+    } catch (error) {
+      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      if (AckErrors.hasAckErrors(error.message)) {
+        await channel.ack(originalMessage)
+        this.logger.log(`DeleteImages: Acknowledge message success`)
+      }
+    }
+  }
 }

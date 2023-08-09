@@ -13,6 +13,7 @@ import {getPagination} from "../common/pagination";
 import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
 import {DeleteNewsDto} from "./dto/delete-news.dto";
+import {lastValueFrom} from "rxjs";
 
 @Injectable()
 export class NewsService {
@@ -95,11 +96,11 @@ export class NewsService {
     return news;
   }
 
-  async updateNews(dto: UpdateNewsDto): Promise<NewsEntity> {
+  async updateNews(dto: UpdateNewsDto, images: []): Promise<NewsEntity> {
     const news = await this.findNewsById(dto.id);
     if (news.authorId === dto.authorId) {
       const updatedNews = await this.newsRepository.createQueryBuilder()
-        .update<NewsEntity>(NewsEntity, dto)
+        .update<NewsEntity>(NewsEntity, {...dto, isImages: images ? true : news.isImages})
         .where('id = :id', {id: dto.id})
         .returning('*')
         .updateEntity(true)
@@ -112,10 +113,14 @@ export class NewsService {
         this.clientLogger.emit('create-log', payload)
         throw new RpcException(new BadRequestException(`News with id "${dto.id}" has not been updated!`))
       }
+      if (images) {
+        const updateImagesResponse = this.clientFiles.send('update-images', {newsId: dto.id, images})
+        await lastValueFrom(updateImagesResponse)
+      }
       return updatedNews.raw[0]
     } else {
       throw new RpcException(new BadRequestException(
-        `News with id "${dto.id}" was not updated! Access denied!`,
+        `News with id "${dto.id}" has not been updated! Access denied!`,
       ));
     }
   }
@@ -140,6 +145,7 @@ export class NewsService {
           `News with id "${dto.id}" was not deleted!`,
         ));
       }
+      if (news.isImages) this.clientFiles.emit('delete-images', news.id)
       return { success: true, message: 'News has been deleted!' };
     } else {
       throw new RpcException(new BadRequestException(

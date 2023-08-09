@@ -62,13 +62,15 @@ export class NewsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]))
   async updateNews(
     @Param('id', ParseIntPipe) id: number,
     @GetCurrentUserId() authorId: number,
-    @Body() dto: UpdateNewsDto
+    @Body() dto: UpdateNewsDto,
+    @UploadedFiles() images
   ) {
     this.logger.log(`Try to update news`)
-    return await this.newsService.updateNews(id, authorId, dto);
+    return await this.newsService.updateNews(id, authorId, dto, images);
   }
 
   @Delete(':id')

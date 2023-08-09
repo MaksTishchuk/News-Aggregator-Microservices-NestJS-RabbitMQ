@@ -89,12 +89,12 @@ export class NewsController {
   }
 
   @MessagePattern('update-news')
-  async updateNews(@Payload() dto: UpdateNewsDto, @Ctx() context: RmqContext) {
+  async updateNews(@Payload() payload: {newsDto: UpdateNewsDto, images: []}, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to update news`)
-      const news = await this.newsService.updateNews(dto);
+      const news = await this.newsService.updateNews(payload.newsDto, payload.images);
       return news
     } finally {
       this.logger.log(`UpdateNews: Acknowledge message success`)

@@ -14,7 +14,8 @@ export class FilesService {
   constructor(
     @InjectModel(FilesModel.name) private readonly filesModel: Model<FilesDocument>,
     private configService: ConfigService
-  ) {}
+  ) {
+  }
 
   async createImages(newsId: number, images: []) {
     if (images) {
@@ -26,6 +27,7 @@ export class FilesService {
 
   async getImagesUrls(newsId: number) {
     const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
+    if (!newsImages) return []
     const imagesUrls = []
     newsImages.images.forEach((image) => {
       image = `${this.configService.get<string>('SERVER_URL')}/images/${image}`
@@ -36,6 +38,7 @@ export class FilesService {
 
   async getImagesListByNewsIds(newsIdsList: []) {
     const newsImagesByIds = await this.filesModel.find({newsId: {"$in": newsIdsList}})
+    if (!newsImagesByIds) return []
     let newsImagesList = []
     newsImagesByIds.forEach((newsImages) => {
       const newsData = {}
@@ -49,6 +52,25 @@ export class FilesService {
       newsImagesList.push(newsData)
     })
     return newsImagesList
+  }
+
+  async updateNewsImages(newsId: number, images: []) {
+    const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
+    const imagesArray = []
+    images.forEach((image) => imagesArray.push(this.createFile(image)))
+    if (newsImages) {
+      await this.filesModel.updateOne({newsId}, {images: imagesArray, createdAt: Date.now()})
+      newsImages.images.forEach((image) => this.removeFile(image))
+    } else await this.filesModel.create({newsId, images: imagesArray, createdAt: Date.now()})
+    return {message: `Images for news with id ${newsId} has been updated!`}
+  }
+
+  async deleteImages(newsId) {
+    const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
+    if (newsImages) {
+      await this.filesModel.deleteOne({newsId})
+      newsImages.images.forEach((image) => this.removeFile(image))
+    }
   }
 
   createFile(file) {
