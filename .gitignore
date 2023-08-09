@@ -27,6 +27,8 @@
 *.sublime-workspace
 /rabbitmq/
 
-!auth-microservice/src/storage/**/*
+auth-microservice/src/storage/**
+!auth-microservice/src/storage/.gitkeep
 
-!files-microservice/src/storage/**/*
+files-microservice/src/storage/**
+!files-microservice/src/storage/.gitkeep
