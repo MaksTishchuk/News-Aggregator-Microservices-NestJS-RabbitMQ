@@ -22,7 +22,7 @@ export const createFile = (file): string => {
 }
 
 export const removeFile = (filePath:string) => {
-  const fullFilePath = path.resolve(__dirname, '..', 'uploads', filePath);
+  const fullFilePath = path.resolve(__dirname, '..', '..', 'src', 'storage', 'uploads', filePath);
   try {
     fs.unlinkSync(fullFilePath);
   } catch (err) {
