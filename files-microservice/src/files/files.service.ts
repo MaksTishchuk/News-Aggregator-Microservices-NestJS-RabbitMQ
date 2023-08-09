@@ -55,7 +55,7 @@ export class FilesService {
     try {
       const fileExtension = file.originalname.split('.').pop();
       const fileName = shortId.generate() + '.' + fileExtension;
-      const filePath = path.resolve(__dirname, '..', 'uploads');
+      const filePath = path.resolve(__dirname, '..', '..', 'src', 'storage', 'uploads');
       const fullPath = path.resolve(filePath, fileName)
       if (!fs.existsSync(filePath)) {
         fs.mkdirSync(filePath, {recursive: true});

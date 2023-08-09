@@ -26,3 +26,7 @@
 .settings/
 *.sublime-workspace
 /rabbitmq/
+
+!auth-microservice/src/storage/**/*
+
+!files-microservice/src/storage/**/*

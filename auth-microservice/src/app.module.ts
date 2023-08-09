@@ -18,7 +18,7 @@ import { ProxyRmqModule } from './proxy-rmq/proxy-rmq.module';
     }),
     ServeStaticModule.forRoot({
       serveRoot: '/images',
-      rootPath: path.resolve(__dirname, 'uploads'),
+      rootPath: path.resolve(__dirname, '..', 'src', 'storage', 'uploads'),
     }),
     AuthModule,
     UserModule,

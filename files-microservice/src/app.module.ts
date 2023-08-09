@@ -16,7 +16,7 @@ import { FilesModule } from './files/files.module';
     }),
     ServeStaticModule.forRoot({
       serveRoot: '/images',
-      rootPath: path.resolve(__dirname, 'uploads'),
+      rootPath: path.resolve(__dirname, '..', 'src', 'storage', 'uploads'),
     }),
     FilesModule,
   ]
