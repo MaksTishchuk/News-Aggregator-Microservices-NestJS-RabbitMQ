@@ -7,8 +7,8 @@ import {
   ParseIntPipe,
   Post,
   Put,
-  Query,
-  UseGuards
+  Query, UploadedFiles,
+  UseGuards, UseInterceptors
 } from '@nestjs/common';
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
 import {GetCurrentUserId} from "../auth/decorators/get-current-user-id.decorator";
@@ -18,6 +18,7 @@ import {CreateNewsDto} from "./dto/create-news.dto";
 import {PaginationDto} from "../common/dto/pagination.dto";
 import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
+import {FileFieldsInterceptor} from "@nestjs/platform-express";
 
 @Controller('news')
 export class NewsController {
@@ -28,9 +29,10 @@ export class NewsController {
 
   @Post('')
   @UseGuards(JwtAuthGuard)
-  async createNews(@GetCurrentUserId() id: number, @Body() dto: CreateNewsDto) {
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]))
+  async createNews(@GetCurrentUserId() id: number, @Body() dto: CreateNewsDto, @UploadedFiles() images) {
     this.logger.log(`Try to create news`)
-    return await this.newsService.createNews(id, dto);
+    return await this.newsService.createNews(id, dto, images);
   }
 
   @Get('')

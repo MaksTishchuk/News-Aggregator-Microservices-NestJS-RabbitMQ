@@ -25,6 +25,9 @@ export class NewsEntity {
   @Column({ type: 'text', nullable: false })
   body: string;
 
+  @Column({ default: false })
+  isImages: boolean;
+
   @Column({ default: 0 })
   views: number;
 

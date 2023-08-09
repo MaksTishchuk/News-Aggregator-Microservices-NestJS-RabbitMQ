@@ -140,8 +140,8 @@ services:
     image: mongo
     restart: unless-stopped
     container_name: db-logger
-    ports:
-      - 27017:27017
+    expose:
+      - "27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: maks
       MONGO_INITDB_ROOT_PASSWORD: password
@@ -164,10 +164,58 @@ services:
     networks:
       - logger-microservice
 
+  files_microservice:
+    container_name: files_microservice
+    build:
+      context: ./files-microservice
+      dockerfile: ./Dockerfile
+    ports:
+      - "${FILES_MICROSERVICE_PORT:-3002}:3002"
+    restart: unless-stopped
+    env_file:
+      - ./files-microservice/.env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./files-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - files-microservice
+      - backend
+
+  db-files:
+    image: mongo
+    restart: unless-stopped
+    container_name: db-files
+    expose:
+      - "27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: maks
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: files
+    volumes:
+      - mongo_files:/data_files/files/mongo
+    networks:
+      - files-microservice
+
+  db-files-mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    container_name: db-files-mongo-express
+    ports:
+      - 8084:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: maks
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://maks:password@db-files:27017/files?authSource=admin
+    networks:
+      - files-microservice
+
 networks:
   auth-microservice:
   news-microservice:
   logger-microservice:
+  files-microservice:
   backend:
 
 volumes:
@@ -175,3 +223,4 @@ volumes:
   postgres_news:
   pgadmin:
   mongo_logger:
+  mongo_files:

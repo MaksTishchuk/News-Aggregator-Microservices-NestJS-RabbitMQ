@@ -7,6 +7,6 @@ export const makeLoggerPayload = (action: LogTypeEnum, message: string, addition
       type: action,
       microservice: MicroservicesEnum.news,
       message: message,
-      additionalInfo: ''
+      additionalInfo: additionalInfo ? additionalInfo : ''
     }
 }

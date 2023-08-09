@@ -1,11 +1,12 @@
 import {Controller, Logger} from '@nestjs/common';
 import { NewsService } from './news.service';
-import {Ctx, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
+import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {CreateNewsDto} from "./dto/create-news.dto";
 import {PaginationDto} from "../common/dto/pagination.dto";
 import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
 import {DeleteNewsDto} from "./dto/delete-news.dto";
+import {AckErrors} from "../common/ack-errors";
 
 @Controller()
 export class NewsController {
@@ -13,17 +14,21 @@ export class NewsController {
 
   constructor(private readonly newsService: NewsService) {}
 
-  @MessagePattern('create-news')
-  async createNews(@Payload() dto: CreateNewsDto, @Ctx() context: RmqContext) {
+  @EventPattern('create-news')
+  async createNews(@Payload() payload: {newsDto: CreateNewsDto, images: []}, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to create news`)
-      const news = await this.newsService.createNews(dto);
-      return news
-    } finally {
+      await this.newsService.createNews(payload.newsDto, payload.images)
+      await channel.ack(originalMessage)
       this.logger.log(`CreateNews: Acknowledge message success`)
-      await channel.ack(originalMessage);
+    } catch (error) {
+      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      if (AckErrors.hasAckErrors(error.message)) {
+        await channel.ack(originalMessage)
+        this.logger.log(`CreateNews: Acknowledge message success`)
+      }
     }
   }
 

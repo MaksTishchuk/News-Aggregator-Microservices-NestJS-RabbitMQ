@@ -23,4 +23,14 @@ export class ClientProxyRMQ {
       }
     })
   }
+
+  getClientProxyFilesInstance(): ClientProxy {
+    return ClientProxyFactory.create({
+      transport: Transport.RMQ,
+      options: {
+        urls: [`amqp://${this.user}:${this.password}@${this.url}`],
+        queue: 'files'
+      }
+    })
+  }
 }

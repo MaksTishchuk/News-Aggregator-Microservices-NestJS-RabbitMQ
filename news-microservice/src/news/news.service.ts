@@ -17,6 +17,7 @@ import {DeleteNewsDto} from "./dto/delete-news.dto";
 @Injectable()
 export class NewsService {
   private clientLogger = this.clientProxyRMQ.getClientProxyLoggerInstance()
+  private clientFiles = this.clientProxyRMQ.getClientProxyFilesInstance()
 
   constructor(
     @InjectRepository(NewsEntity)
@@ -24,16 +25,17 @@ export class NewsService {
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
-  async createNews(createNewsDto: CreateNewsDto): Promise<NewsEntity> {
+  async createNews(createNewsDto: CreateNewsDto, images: []) {
     try {
       const news = this.newsRepository.create({...createNewsDto});
-      await this.newsRepository.save(news)
+      if (images) news.isImages = true
+      const createdNews = await this.newsRepository.save(news)
+      if (images) this.clientFiles.emit('create-images', {newsId: createdNews.id, images})
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.action,
         `CreateNews: User with id "${createNewsDto.authorId}" created news!`
       )
       this.clientLogger.emit('create-log', payload)
-      return news
     } catch (err) {
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.error,

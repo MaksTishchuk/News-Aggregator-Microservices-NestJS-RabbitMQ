@@ -12,17 +12,18 @@ export class NewsService {
 
   private clientNews = this.clientProxyRMQ.getClientProxyNewsInstance()
   private clientAuth = this.clientProxyRMQ.getClientProxyAuthInstance()
+  private clientFiles = this.clientProxyRMQ.getClientProxyFilesInstance()
 
-  async createNews(id: number, dto: CreateNewsDto) {
-    const newsResponse = this.clientNews.send('create-news', { authorId: id, ...dto})
-    const news = await lastValueFrom(newsResponse)
-    return await this.addAuthorToNews(news)
+  async createNews(id: number, dto: CreateNewsDto, images) {
+    this.clientNews.emit('create-news', { newsDto: {authorId: id, ...dto}, images: images.images})
+    return {message: 'The news has been sent for processing and will be available soon!'}
   }
 
   async findAllNews(dto: PaginationDto) {
     const newsResponse = this.clientNews.send('find-all-news', dto)
-    const news = await lastValueFrom(newsResponse)
-    return await this.addAuthorToNewsArray(news)
+    let news = await lastValueFrom(newsResponse)
+    news = await this.addAuthorToNewsArray(news)
+    return await this.addImagesToNewsArray(news)
   }
 
   async getUserSubscriptionNews(userId: number, dto: PaginationDto) {
@@ -30,25 +31,29 @@ export class NewsService {
     const userSubscriptions = await lastValueFrom(userSubscriptionsResponse)
     const authorIds = userSubscriptions.map((user) => user.id)
     const newsResponse = this.clientNews.send('user-subscriptions-news', {authorIds, pagination: dto})
-    const news = await lastValueFrom(newsResponse)
-    return news.map((news) => {
+    let news = await lastValueFrom(newsResponse)
+    news = news.map((news) => {
       const author = userSubscriptions.find((author) => author.id === news.authorId);
       if (author) news.author = author
       return news;
     })
+    return await this.addImagesToNewsArray(news)
   }
 
   async searchNews(dto: SearchNewsDto) {
     const response = this.clientNews.send('search-news', dto)
-    const newsResponse = await lastValueFrom(response)
-    const newsWithAuthors = await this.addAuthorToNewsArray(newsResponse.news)
-    return {news: newsWithAuthors, total: newsResponse.total}
+    let newsResponse = await lastValueFrom(response)
+    let news = await this.addAuthorToNewsArray(newsResponse.news)
+    news = await this.addImagesToNewsArray(news)
+    return {news, total: newsResponse.total}
   }
 
   async findOneNews(id: number) {
     const newsResponse = this.clientNews.send('find-one-news', id)
-    const news = await lastValueFrom(newsResponse)
-    return await this.addAuthorToNews(news)
+    let news = await lastValueFrom(newsResponse)
+    news = await this.addAuthorToNews(news)
+    if (news.isImages) await this.addImagesToNews(news)
+    return news
   }
 
   async updateNews(id: number, authorId: number, dto: UpdateNewsDto) {
@@ -68,6 +73,12 @@ export class NewsService {
     return news
   }
 
+  private async addImagesToNews(news) {
+    const imagesResponse = this.clientFiles.send('get-images-by-news-id', news.id)
+    news.images = await lastValueFrom(imagesResponse)
+    return news
+  }
+
   private async addAuthorToNewsArray(news) {
     const authorIds = Array.from(new Set(news.map((item) => item.authorId)))
     const authorResponse = this.clientAuth.send('get-users-by-ids', authorIds)
@@ -76,6 +87,20 @@ export class NewsService {
       const author = authors.find((author) => author.id === news.authorId);
       if (author) news.author = author
       return news;
+    })
+  }
+
+  private async addImagesToNewsArray(news) {
+    const newsIds = news.map((item) => item.id)
+    const newsImagesResponse = this.clientFiles.send('get-images-by-news-ids-list', newsIds)
+    const newsImages = await lastValueFrom(newsImagesResponse)
+    return news.map((news) => {
+      if (news.isImages) {
+        const oneNewsImages = newsImages.find((item) => item.newsId === news.id);
+        if (oneNewsImages) news.images = oneNewsImages.images
+      }
+      if (!news.images) news.images = []
+      return news
     })
   }
 }
