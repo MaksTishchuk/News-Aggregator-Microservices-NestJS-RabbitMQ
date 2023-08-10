@@ -50,7 +50,6 @@ export class NewsService {
   async findAllNews(dto: PaginationDto): Promise<NewsEntity[]> {
     const {perPage, skip} = getPagination(dto)
     return await this.newsRepository.find({
-      relations: ['comments'],
       order: { createdAt: 'DESC' },
       take: perPage,
       skip
@@ -81,10 +80,7 @@ export class NewsService {
   }
 
   async findNewsById(id: number): Promise<NewsEntity> {
-    const news = await this.newsRepository.findOne({
-      where: { id },
-      relations: ['comments'],
-    });
+    const news = await this.newsRepository.findOne({where: { id }});
     if (!news) {
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.error,
@@ -129,7 +125,6 @@ export class NewsService {
     const {perPage, skip} = getPagination(payload.pagination)
     return await this.newsRepository.find({
       where: {authorId: In(payload.authorIds)},
-      relations: ['comments'],
       order: {createdAt: 'DESC'},
       take: perPage,
       skip

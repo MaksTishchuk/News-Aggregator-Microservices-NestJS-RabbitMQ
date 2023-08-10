@@ -7,6 +7,7 @@ import {AppController} from "./app.controller";
 import {AppService} from "./app.service";
 import { UserModule } from './user/user.module';
 import {LoggerModule} from "./logger/logger.module";
+import { CommentsModule } from './comments/comments.module';
 
 
 @Module({
@@ -16,7 +17,8 @@ import {LoggerModule} from "./logger/logger.module";
     NewsModule,
     ProxyRmqModule,
     UserModule,
-    LoggerModule
+    LoggerModule,
+    CommentsModule
   ],
   controllers: [AppController],
   providers: [AppService],

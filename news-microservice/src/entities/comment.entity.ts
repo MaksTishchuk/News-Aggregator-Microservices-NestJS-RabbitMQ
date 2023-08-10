@@ -4,7 +4,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
+  ManyToOne, OneToMany, JoinColumn, Index, RelationCount,
 } from 'typeorm';
 import {NewsEntity} from "./news.entity";
 
@@ -28,6 +28,29 @@ export class CommentEntity {
 
   @Column()
   newsId: number;
+
+  @OneToMany(() => CommentEntity, comment => comment.replyTo)
+  replies: CommentEntity[]
+
+  @RelationCount((comment: CommentEntity) => comment.replies)
+  repliesCount: number
+
+  @ManyToOne(type => CommentEntity)
+  @JoinColumn({name: 'parentCommentId'})
+  replyTo?: CommentEntity | null;
+
+  @Column({nullable: true})
+  @Index()
+  parentCommentId: number | null;
+
+  @Column({nullable: true})
+  replyToUserId: number | null;
+
+  @Column({nullable: true})
+  replyToUserUsername: string | null;
+
+  @Column({nullable: true})
+  replyToUserFirstName: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

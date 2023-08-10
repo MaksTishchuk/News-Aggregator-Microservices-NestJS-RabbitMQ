@@ -31,22 +31,11 @@ export class NewsEntity {
   @Column({ default: 0 })
   views: number;
 
-  // @OneToMany(() => ImageEntity, (image) => image.news)
-  // images: ImageEntity[];
-
   @OneToMany(() => CommentEntity, (comment) => comment.news)
   comments: CommentEntity[];
 
-  // @ManyToMany((type) => UserEntity, (user) => user.likesNews, {
-  //   eager: true,
-  //   nullable: false,
-  //   onDelete: 'CASCADE',
-  // })
-  // @JoinTable()
-  // likedByUsers: UserEntity[];
-  //
-  // @RelationCount((news: NewsEntity) => news.likedByUsers)
-  // likesCount: number;
+  @RelationCount((news: NewsEntity) => news.comments)
+  commentsCount: number;
 
   @CreateDateColumn()
   createdAt: Date;
