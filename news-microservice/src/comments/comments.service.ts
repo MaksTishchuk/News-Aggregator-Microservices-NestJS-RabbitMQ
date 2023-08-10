@@ -11,6 +11,8 @@ import {CreateCommentDto} from "./dto/create-comment.dto";
 import {NewsEntity} from "../entities/news.entity";
 import {PaginationDto} from "../common/dto/pagination.dto";
 import {getPagination} from "../common/pagination";
+import {UpdateCommentDto} from "./dto/update-comment.dto";
+import {DeleteCommentDto} from "./dto/delete-comment.dto";
 
 @Injectable()
 export class CommentsService {
@@ -32,7 +34,7 @@ export class CommentsService {
     }
     let parentComment = null
     if (dto.parentCommentId) {
-      parentComment = await this.commentRepository.findOne({where: {id: dto.parentCommentId}})
+      parentComment = await this.findCommentById(dto.parentCommentId)
     }
     try {
       const comment = this.commentRepository.create({
@@ -51,11 +53,78 @@ export class CommentsService {
     }
   }
 
-  async findAllComments() {
+  async findAllComments(dto: PaginationDto) {
+    const {perPage, skip} = getPagination(dto)
     return await this.commentRepository.find({
       where: {parentCommentId: IsNull()},
       relations: ['replies'],
       order: { createdAt: 'DESC' },
+      take: perPage,
+      skip
     });
+  }
+
+  async findNewsComments(newsId: number, dto: PaginationDto) {
+    const {perPage, skip} = getPagination(dto)
+    return await this.commentRepository.find({
+      where: {newsId, parentCommentId: IsNull()},
+      relations: ['replies'],
+      order: { createdAt: 'DESC' },
+      take: perPage,
+      skip
+    });
+  }
+
+  async findCommentById(id: number) {
+    const comment = await this.commentRepository.findOne({where: { id }, relations: ['replies']});
+    if (!comment) {
+      throw new RpcException(new NotFoundException(`Comment with id "${id}" was not found!`));
+    }
+    return comment;
+  }
+
+  async updateComment(dto: UpdateCommentDto) {
+    const comment = await this.findCommentById(dto.commentId);
+    if (comment.authorId === dto.authorId) {
+      const updatedComment = await this.commentRepository.createQueryBuilder()
+        .update<CommentEntity>(CommentEntity, {text: dto.text})
+        .where('id = :id', {id: dto.commentId})
+        .returning('*')
+        .updateEntity(true)
+        .execute()
+      if (!updatedComment.affected) {
+        throw new RpcException(new BadRequestException(`Comment with id "${dto.commentId}" has not been updated!`))
+      }
+      return updatedComment.raw[0]
+    } else {
+      throw new RpcException(new BadRequestException(
+        `Comment with id "${dto.commentId}" has not been updated! Access denied!`,
+      ));
+    }
+  }
+
+  async deleteComment(dto: DeleteCommentDto) {
+    const comment = await this.findCommentById(dto.commentId);
+    if (comment.authorId === dto.authorId) {
+      let result
+      if (comment.repliesCount === 0) {
+        result = await this.commentRepository.delete({id: dto.commentId});
+      } else {
+        result = await this.commentRepository.update(
+          {id: dto.commentId},
+          {text: 'DELETED', isDeleted: true},
+        )
+      }
+      if (!result.affected) {
+        throw new RpcException(new NotFoundException(
+          `Comment with id "${dto.commentId}" has not been deleted!`,
+        ));
+      }
+      return {success: true, message: 'Comment has been deleted!' };
+    } else {
+      throw new RpcException(new BadRequestException(
+        `Comment with id "${dto.commentId}" has not been deleted! Access denied!`,
+      ));
+    }
   }
 }

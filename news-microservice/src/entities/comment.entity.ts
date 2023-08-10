@@ -52,6 +52,9 @@ export class CommentEntity {
   @Column({nullable: true})
   replyToUserFirstName: string | null;
 
+  @Column({default: false})
+  isDeleted: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 
