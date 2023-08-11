@@ -6,6 +6,8 @@ import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {LoggerDto} from "../common/dto/logger.dto";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
 import {makeLoggerPayload} from "../common/utils/logger.payload";
+import {RegisterResponseType} from "./types/register.response.type";
+import {LoginResponseType} from "./types/login.response.type";
 
 @Controller('auth')
 export class AuthController {
@@ -18,7 +20,7 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
+  async register(@Body() dto: RegisterDto): Promise<RegisterResponseType> {
     this.logger.log(`Try to register user`)
     const payload: LoggerDto = makeLoggerPayload(
       LogTypeEnum.action,
@@ -29,7 +31,7 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto) {
+  async login(@Body() dto: LoginDto): Promise<LoginResponseType> {
     this.logger.log(`Try to login user`)
     const payload: LoggerDto = makeLoggerPayload(
       LogTypeEnum.action,
