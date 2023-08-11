@@ -23,17 +23,14 @@ export class UserService {
   private clientLogger = this.clientProxyRMQ.getClientProxyLoggerInstance()
 
   constructor(
-    @InjectRepository(UserEntity)
-    private userRepository: Repository<UserEntity>,
+    @InjectRepository(UserEntity) private userRepository: Repository<UserEntity>,
     private configService: ConfigService,
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
   async getAllUsers(data: PaginationDto): Promise<IGetAllUsersResponseContract> {
     const {perPage, skip} = getPagination(data)
-    return await this.userRepository.find(
-      {order: {createdAt: 'desc'}, take: perPage, skip},
-    )
+    return await this.userRepository.find({order: {createdAt: 'desc'}, take: perPage, skip})
   }
 
   async getUserSubscriptions(id: number) {
@@ -159,12 +156,9 @@ export class UserService {
 
   async subscribeOnUser(userId: number, subscriptionUserId: number): Promise<ISubscribeOnUserResponseContract> {
     if (userId === subscriptionUserId) {
-      const payload: LoggerDto = makeLoggerPayload(
-        LogTypeEnum.warning,
-        `SubscribeOnUser: User with id "${userId}" cannot subscribe to himself!`
+      throw new RpcException(
+        new BadRequestException(`User with id "${userId}" cannot subscribe to himself!`)
       )
-      this.clientLogger.emit('create-log', payload)
-      throw new RpcException(new BadRequestException(`User with id "${userId}" cannot subscribe to himself!`))
     }
     const users: UserEntity[] = await this.userRepository.find({
       where: {id: In([userId, subscriptionUserId])},
@@ -176,32 +170,18 @@ export class UserService {
       else if (findUser.id === userId) user = findUser
     }
     if (!subscriptionUser) {
-      const payload: LoggerDto = makeLoggerPayload(
-        LogTypeEnum.warning,
-        `SubscribeOnUser: User with id ${subscriptionUserId} was not found!`
-      )
-      this.clientLogger.emit('create-log', payload)
-      throw new RpcException(new NotFoundException(
-        `User with id ${subscriptionUserId} was not found!`
-      ))
+      throw new RpcException(new NotFoundException(`User with id ${subscriptionUserId} was not found!`))
     }
+    let message
     if (subscriptionUser.subscribers.find(subscriber => subscriber.id === user.id)) {
-      subscriptionUser.subscribers = subscriptionUser.subscribers.filter(
-        (subscriber) => subscriber.id !== user.id
-      )
-      const payload: LoggerDto = makeLoggerPayload(
-        LogTypeEnum.action,
-        `SubscribeOnUser: User with id "${userId}" unsubscribed from user with id "${subscriptionUserId}"!`
-      )
-      this.clientLogger.emit('create-log', payload)
+      subscriptionUser.subscribers = subscriptionUser.subscribers.filter((subscriber) => subscriber.id !== user.id)
+      message = `SubscribeOnUser: User with id "${userId}" unsubscribed from user with id "${subscriptionUserId}"!`
     } else {
       subscriptionUser.subscribers.push(user)
-      const payload: LoggerDto = makeLoggerPayload(
-        LogTypeEnum.action,
-        `SubscribeOnUser: User with id "${userId}" subscribe on user with id "${subscriptionUserId}"!`
-      )
-      this.clientLogger.emit('create-log', payload)
+      message = `SubscribeOnUser: User with id "${userId}" subscribe on user with id "${subscriptionUserId}"!`
     }
+    const payload: LoggerDto = makeLoggerPayload(LogTypeEnum.action, message)
+    this.clientLogger.emit('create-log', payload)
     await this.userRepository.save(subscriptionUser)
     return await this.getUserById(subscriptionUser.id)
   }
