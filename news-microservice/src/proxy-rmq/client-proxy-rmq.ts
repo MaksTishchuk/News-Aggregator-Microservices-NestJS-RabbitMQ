@@ -19,7 +19,10 @@ export class ClientProxyRMQ {
       transport: Transport.RMQ,
       options: {
         urls: [`amqp://${this.user}:${this.password}@${this.url}`],
-        queue: 'logger'
+        queue: 'logger',
+        queueOptions: {
+          durable: true
+        }
       }
     })
   }
@@ -29,7 +32,10 @@ export class ClientProxyRMQ {
       transport: Transport.RMQ,
       options: {
         urls: [`amqp://${this.user}:${this.password}@${this.url}`],
-        queue: 'files'
+        queue: 'files',
+        queueOptions: {
+          durable: true
+        }
       }
     })
   }
