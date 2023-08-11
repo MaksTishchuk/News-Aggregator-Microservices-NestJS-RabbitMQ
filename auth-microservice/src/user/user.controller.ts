@@ -1,10 +1,14 @@
 import {Controller, Logger} from '@nestjs/common';
 import {UserService} from "./user.service";
 import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
-import {SearchUsersDto} from "./dto/search-users.dto";
-import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {AckErrors} from "../utils/ack-errors";
 import {PaginationDto} from "../utils/dto/pagination.dto";
+import {
+  IGetAllUsersResponseContract, IGetUserByIdResponseContract, IGetUserProfileResponseContract,
+  ISearchUsersRequestContract, ISubscribeOnUserRequestContract, ISubscribeOnUserResponseContract,
+  IUpdateUserAvatarRequestContract, IUpdateUserAvatarResponseContract,
+  IUpdateUserProfileRequestContract, IUpdateUserProfileResponseContract
+} from "./contracts";
 
 @Controller()
 export class UserController {
@@ -14,13 +18,14 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @MessagePattern('get-all-users')
-  async getAllUsers(@Payload() dto: PaginationDto, @Ctx() context: RmqContext) {
+  async getAllUsers(
+    @Payload() request: PaginationDto, @Ctx() context: RmqContext
+  ): Promise<IGetAllUsersResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get users`)
-      const users = await this.userService.getAllUsers(dto);
-      return users
+      return await this.userService.getAllUsers(request);
     } finally {
       this.logger.log(`GetAllUsers: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -33,8 +38,7 @@ export class UserController {
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get user subscriptions ids`)
-      const users = await this.userService.getUserSubscriptions(id);
-      return users
+      return await this.userService.getUserSubscriptions(id);
     } finally {
       this.logger.log(`GetUserSubscriptions: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -42,13 +46,14 @@ export class UserController {
   }
 
   @MessagePattern('search-users')
-  async searchUsers(@Payload() dto: SearchUsersDto, @Ctx() context: RmqContext) {
+  async searchUsers(
+    @Payload() request: ISearchUsersRequestContract, @Ctx() context: RmqContext
+  ): Promise<IGetAllUsersResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to search users`)
-      const users = await this.userService.searchUsers(dto);
-      return users
+      return await this.userService.searchUsers(request);
     } finally {
       this.logger.log(`SearchUsers: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -61,8 +66,7 @@ export class UserController {
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get users by ids`)
-      const users = await this.userService.getUsersByIds(ids);
-      return users
+      return await this.userService.getUsersByIds(ids);
     } finally {
       this.logger.log(`GetUsersByIds: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -70,13 +74,14 @@ export class UserController {
   }
 
   @MessagePattern('get-user-by-id')
-  async getUserById(@Payload() id: number, @Ctx() context: RmqContext) {
+  async getUserById(
+    @Payload() id: number, @Ctx() context: RmqContext
+  ): Promise<IGetUserByIdResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get user`)
-      const user = await this.userService.getUserById(id);
-      return user;
+      return await this.userService.getUserById(id);
     } finally {
       this.logger.log(`GetUserById: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -89,8 +94,7 @@ export class UserController {
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get short user info`)
-      const user = await this.userService.getShortUserInfoById(id);
-      return user;
+      return await this.userService.getShortUserInfoById(id);
     } finally {
       this.logger.log(`GetShortUserInfoById: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -98,13 +102,14 @@ export class UserController {
   }
 
   @MessagePattern('get-user-profile')
-  async getUserProfile(@Payload() id: number, @Ctx() context: RmqContext) {
+  async getUserProfile(
+    @Payload() id: number, @Ctx() context: RmqContext
+  ): Promise<IGetUserProfileResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get user profile`)
-      const user = await this.userService.getUserProfile(id);
-      return user;
+      return await this.userService.getUserProfile(id);
     } finally {
       this.logger.log(`GetUserProfile: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -112,13 +117,14 @@ export class UserController {
   }
 
   @MessagePattern('update-user-profile')
-  async updateProfile(@Payload() dto: UpdateUserProfileDto, @Ctx() context: RmqContext) {
+  async updateProfile(
+    @Payload() request: IUpdateUserProfileRequestContract, @Ctx() context: RmqContext
+  ): Promise<IUpdateUserProfileResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to update user profile`)
-      const user = await this.userService.updateUserProfile(dto);
-      return user
+      return await this.userService.updateUserProfile(request);
     } finally {
       this.logger.log(`UpdateProfile: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -126,13 +132,12 @@ export class UserController {
   }
 
   @MessagePattern('get-user-avatar')
-  async getUserAvatar(@Payload() payload, @Ctx() context: RmqContext) {
+  async getUserAvatar(@Payload() id: number, @Ctx() context: RmqContext): Promise<string> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get user avatar`)
-      const avatarUrl = await this.userService.getUserAvatar(payload.id);
-      return avatarUrl
+      return await this.userService.getUserAvatar(id);
     } finally {
       this.logger.log(`GetUserAvatar: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -140,13 +145,14 @@ export class UserController {
   }
 
   @MessagePattern('update-user-avatar')
-  async updateUserAvatar(@Payload() payload, @Ctx() context: RmqContext) {
+  async updateUserAvatar(
+    @Payload() request: IUpdateUserAvatarRequestContract, @Ctx() context: RmqContext
+  ): Promise<IUpdateUserAvatarResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to update user avatar`)
-      const avatarPath = await this.userService.updateUserAvatar(payload);
-      return avatarPath
+      return await this.userService.updateUserAvatar(request);
     } finally {
       this.logger.log(`UpdateUserAvatar: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -154,7 +160,7 @@ export class UserController {
   }
 
   @EventPattern('delete-user')
-  async deleteUser(@Payload() id: number, @Ctx() context: RmqContext) {
+  async deleteUser(@Payload() id: number, @Ctx() context: RmqContext): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -172,13 +178,14 @@ export class UserController {
   }
 
   @MessagePattern('subscribe-on-user')
-  async subscribeOnUser(@Payload() payload, @Ctx() context: RmqContext) {
+  async subscribeOnUser(
+    @Payload() request: ISubscribeOnUserRequestContract, @Ctx() context: RmqContext
+  ): Promise<ISubscribeOnUserResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to subscribe on user`)
-      const user = await this.userService.subscribeOnUser(payload.userId, payload.subscriptionUserId);
-      return user;
+      return await this.userService.subscribeOnUser(request.userId, request.subscriptionUserId);
     } finally {
       this.logger.log(`SubscribeOnUser: Acknowledge message success`)
       await channel.ack(originalMessage);

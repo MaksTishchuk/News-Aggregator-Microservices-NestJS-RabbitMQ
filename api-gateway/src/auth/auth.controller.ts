@@ -21,7 +21,7 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() dto: RegisterDto): Promise<RegisterResponseType> {
-    this.logger.log(`Try to register user`)
+    this.logger.log(`Try to register user with email ${dto.email}`)
     const payload: LoggerDto = makeLoggerPayload(
       LogTypeEnum.action,
       `Try to register user with email: ${dto.email}`
@@ -32,7 +32,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() dto: LoginDto): Promise<LoginResponseType> {
-    this.logger.log(`Try to login user`)
+    this.logger.log(`Try to login user with email ${dto.email}`)
     const payload: LoggerDto = makeLoggerPayload(
       LogTypeEnum.action,
       `Try to login user with email: ${dto.email}`
