@@ -6,15 +6,11 @@ import {SearchUsersDto} from "./dto/search-users.dto";
 import {UpdateUserProfileDto} from "./dto/update-user-profile.dto";
 import {PaginationDto} from "../common/dto/pagination.dto";
 import {
-  IGetAllUsersRequestContract, IGetAllUsersResponseContract,
-  IGetUserByIdResponseContract, IGetUserProfileResponseContract,
-  ISearchUsersRequestContract, ISearchUsersResponseContract,
-  ISubscribeOnUserRequestContract, ISubscribeOnUserResponseContract,
-  IUpdateUserAvatarRequestContract, IUpdateUserProfileRequestContract,
-  IUpdateUserProfileResponseContract
+  IGetAllUsersRequestContract, IGetAllUsersResponseContract, IGetUserByIdResponseContract,
+  IGetUserProfileResponseContract, ISearchUsersRequestContract, ISearchUsersResponseContract,
+  ISubscribeOnUserRequestContract, ISubscribeOnUserResponseContract, IUpdateUserAvatarRequestContract,
+  IUpdateUserAvatarResponseContract, IUpdateUserProfileRequestContract, IUpdateUserProfileResponseContract
 } from "./contracts";
-import {IUserEntity} from "./interfaces/user-entity.interface";
-import {IUserEntityWithSubscribe} from "./interfaces/user-entity-with-subscribe.interface";
 
 
 @Injectable()
@@ -23,37 +19,32 @@ export class UserService {
 
   private clientAuth = this.clientProxyRMQ.getClientProxyAuthInstance()
 
-  async getAllUsers(paginationDto: PaginationDto): Promise<IUserEntity[]> {
+  async getAllUsers(paginationDto: PaginationDto): Promise<IGetAllUsersResponseContract> {
     const payload: IGetAllUsersRequestContract = {...paginationDto}
     const response = this.clientAuth.send('get-all-users', payload)
-    const responseBody: IGetAllUsersResponseContract = await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 
-  async searchUsers(dto: SearchUsersDto): Promise<IUserEntity[]> {
+  async searchUsers(dto: SearchUsersDto): Promise<ISearchUsersResponseContract> {
     const payload: ISearchUsersRequestContract = {...dto}
     const response = this.clientAuth.send('search-users', payload)
-    const responseBody: ISearchUsersResponseContract = await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 
-  async getUserById(id: number): Promise<IUserEntityWithSubscribe> {
+  async getUserById(id: number): Promise<IGetUserByIdResponseContract> {
     const response = this.clientAuth.send('get-user-by-id', id)
-    const responseBody: IGetUserByIdResponseContract = await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 
-  async getUserProfile(id: number): Promise<IUserEntityWithSubscribe> {
+  async getUserProfile(id: number): Promise<IGetUserProfileResponseContract> {
     const response = this.clientAuth.send('get-user-profile', id)
-    const responseBody: IGetUserProfileResponseContract = await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 
-  async updateUserProfile(id: number, dto: UpdateUserProfileDto): Promise<IUserEntityWithSubscribe> {
+  async updateUserProfile(id: number, dto: UpdateUserProfileDto): Promise<IUpdateUserProfileResponseContract> {
     const payload: IUpdateUserProfileRequestContract = {id, ...dto}
     const response = this.clientAuth.send('update-user-profile', payload)
-    const responseBody: IUpdateUserProfileResponseContract =  await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 
   async getUserAvatar(id: number): Promise<string> {
@@ -61,21 +52,19 @@ export class UserService {
     return await lastValueFrom(response)
   }
 
-  async updateUserAvatar(id: number, avatar: File): Promise<IUserEntityWithSubscribe> {
+  async updateUserAvatar(id: number, avatar: File): Promise<IUpdateUserAvatarResponseContract> {
     const payload: IUpdateUserAvatarRequestContract = {id, avatar}
     const response = this.clientAuth.send('update-user-avatar', payload)
-    const responseBody: IUpdateUserProfileResponseContract = await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 
   async deleteUser(id: number): Promise<void> {
     this.clientAuth.emit('delete-user', id)
   }
 
-  async subscribeOnUser(userId: number, subscriptionUserId: number): Promise<IUserEntityWithSubscribe> {
+  async subscribeOnUser(userId: number, subscriptionUserId: number): Promise<ISubscribeOnUserResponseContract> {
     const payload: ISubscribeOnUserRequestContract = {userId, subscriptionUserId}
     const response = this.clientAuth.send('subscribe-on-user', payload)
-    const responseBody: ISubscribeOnUserResponseContract = await lastValueFrom(response)
-    return responseBody
+    return await lastValueFrom(response)
   }
 }

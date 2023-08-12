@@ -2,13 +2,14 @@ import {Controller, Logger} from '@nestjs/common';
 import {UserService} from "./user.service";
 import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {AckErrors} from "../utils/ack-errors";
-import {PaginationDto} from "../utils/dto/pagination.dto";
 import {
-  IGetAllUsersResponseContract, IGetUserByIdResponseContract, IGetUserProfileResponseContract,
-  ISearchUsersRequestContract, ISubscribeOnUserRequestContract, ISubscribeOnUserResponseContract,
-  IUpdateUserAvatarRequestContract, IUpdateUserAvatarResponseContract,
-  IUpdateUserProfileRequestContract, IUpdateUserProfileResponseContract
+  IGetAllUsersRequestContract, IGetAllUsersResponseContract, IGetUserByIdResponseContract,
+  IGetUserProfileResponseContract, IGetUsersByIdsResponseContract, ISearchUsersRequestContract,
+  ISearchUsersResponseContract, ISubscribeOnUserRequestContract, ISubscribeOnUserResponseContract,
+  IUpdateUserAvatarRequestContract, IUpdateUserAvatarResponseContract, IUpdateUserProfileRequestContract,
+  IUpdateUserProfileResponseContract, IUsersSubscriptionsResponseContract
 } from "./contracts";
+import {IAuthorEntityShort} from "./interfaces/author-entity-short.interface";
 
 @Controller()
 export class UserController {
@@ -19,7 +20,7 @@ export class UserController {
 
   @MessagePattern('get-all-users')
   async getAllUsers(
-    @Payload() request: PaginationDto, @Ctx() context: RmqContext
+    @Payload() request: IGetAllUsersRequestContract, @Ctx() context: RmqContext
   ): Promise<IGetAllUsersResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
@@ -33,7 +34,9 @@ export class UserController {
   }
 
   @MessagePattern('user-subscriptions')
-  async getUserSubscriptions(@Payload() id: number, @Ctx() context: RmqContext) {
+  async getUserSubscriptions(
+    @Payload() id: number, @Ctx() context: RmqContext
+  ): Promise<IUsersSubscriptionsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -48,7 +51,7 @@ export class UserController {
   @MessagePattern('search-users')
   async searchUsers(
     @Payload() request: ISearchUsersRequestContract, @Ctx() context: RmqContext
-  ): Promise<IGetAllUsersResponseContract> {
+  ): Promise<ISearchUsersResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -61,7 +64,9 @@ export class UserController {
   }
 
   @MessagePattern('get-users-by-ids')
-  async getUsersByIds(@Payload() ids: [], @Ctx() context: RmqContext) {
+  async getUsersByIds(
+    @Payload() ids: number[], @Ctx() context: RmqContext
+  ): Promise<IGetUsersByIdsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -89,7 +94,9 @@ export class UserController {
   }
 
   @MessagePattern('get-short-user-info-by-id')
-  async getShortUserInfoById(@Payload() id: number, @Ctx() context: RmqContext) {
+  async getShortUserInfoById(
+    @Payload() id: number, @Ctx() context: RmqContext
+  ): Promise<IAuthorEntityShort> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -169,7 +176,7 @@ export class UserController {
       await channel.ack(originalMessage)
       this.logger.log(`DeleteUser: Acknowledge message success`)
     } catch (error) {
-      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      this.logger.error(`Error: ${error}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
         this.logger.log(`DeleteUser: Acknowledge message success`)

@@ -10,13 +10,14 @@ import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {LoggerDto} from "../utils/dto/logger.dto";
 import {makeLoggerPayload} from "../utils/logger.payload";
 import {LogTypeEnum} from "../utils/enums/log-type.enum";
-import {PaginationDto} from "../utils/dto/pagination.dto";
 import {getPagination} from "../utils/pagination";
 import {
-  IGetAllUsersResponseContract, IGetUserByIdResponseContract, IGetUserProfileResponseContract,
-  ISearchUsersRequestContract, ISubscribeOnUserResponseContract, IUpdateUserAvatarRequestContract,
-  IUpdateUserAvatarResponseContract, IUpdateUserProfileResponseContract
+  IGetAllUsersRequestContract, IGetAllUsersResponseContract, IGetUserByIdResponseContract,
+  IGetUserProfileResponseContract, IGetUsersByIdsResponseContract, ISearchUsersRequestContract,
+  ISearchUsersResponseContract, ISubscribeOnUserResponseContract, IUpdateUserAvatarRequestContract,
+  IUpdateUserAvatarResponseContract, IUpdateUserProfileResponseContract, IUsersSubscriptionsResponseContract
 } from "./contracts";
+import {IAuthorEntityShort} from "./interfaces/author-entity-short.interface";
 
 @Injectable()
 export class UserService {
@@ -28,17 +29,26 @@ export class UserService {
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
-  async getAllUsers(data: PaginationDto): Promise<IGetAllUsersResponseContract> {
+  async getAllUsers(data: IGetAllUsersRequestContract): Promise<IGetAllUsersResponseContract> {
     const {perPage, skip} = getPagination(data)
     return await this.userRepository.find({order: {createdAt: 'desc'}, take: perPage, skip})
   }
 
-  async getUserSubscriptions(id: number) {
+  async getUserSubscriptions(id: number): Promise<IUsersSubscriptionsResponseContract> {
     const user = await this.getUserById(id)
-    return user.subscriptions
+    return user.subscriptions.map(subscription => {
+      const keysArray = [
+        'id', 'email', 'username', 'avatar', 'firstName', 'lastName',
+        'subscribersCount', 'subscriptionsCount'
+      ]
+      for (const [key, value] of Object.entries(subscription)) {
+        if (!keysArray.includes(key)) delete subscription[key]
+      }
+      return subscription
+    })
   }
 
-  async searchUsers(data: ISearchUsersRequestContract): Promise<IGetAllUsersResponseContract> {
+  async searchUsers(data: ISearchUsersRequestContract): Promise<ISearchUsersResponseContract> {
     if (!data.username && !data.email) {
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.error,
@@ -53,7 +63,7 @@ export class UserService {
     ]);
   }
 
-  async getUsersByIds(ids: []): Promise<UserEntity[]> {
+  async getUsersByIds(ids: number[]): Promise<IGetUsersByIdsResponseContract> {
     return await this.userRepository.find(
       {
         where: {id: In(ids)},
@@ -78,11 +88,12 @@ export class UserService {
     return user
   }
 
-  async getShortUserInfoById(id: number): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({
+  async getShortUserInfoById(id: number): Promise<IAuthorEntityShort> {
+    const user: UserEntity = await this.userRepository.findOne({
       where: {id},
       select: ['id', 'email', 'username', 'avatar', 'firstName', 'lastName']
     })
+    delete user.avatar
     if (!user) {
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.error,
@@ -129,7 +140,9 @@ export class UserService {
     return this.configService.get<string>('SERVER_URL') + '/images/' + user.avatar
   }
 
-  async updateUserAvatar(data: IUpdateUserAvatarRequestContract): Promise<IUpdateUserAvatarResponseContract> {
+  async updateUserAvatar(
+    data: IUpdateUserAvatarRequestContract
+  ): Promise<IUpdateUserAvatarResponseContract> {
     if (data.avatar) {
       const avatar = createFile(data.avatar);
       return await this.updateUserProfile({id: data.id, avatar})

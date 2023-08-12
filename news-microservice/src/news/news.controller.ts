@@ -1,12 +1,14 @@
 import {Controller, Logger} from '@nestjs/common';
 import { NewsService } from './news.service';
 import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
-import {CreateNewsDto} from "./dto/create-news.dto";
-import {PaginationDto} from "../common/dto/pagination.dto";
-import {SearchNewsDto} from "./dto/search-news.dto";
-import {UpdateNewsDto} from "./dto/update-news.dto";
-import {DeleteNewsDto} from "./dto/delete-news.dto";
 import {AckErrors} from "../common/ack-errors";
+import {
+  ICreateNewsRequestContract, IDeleteNewsRequestContract, IDeleteNewsResponseContract,
+  IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
+  ISearchNewsRequestContract, ISearchNewsResponseContract, IUpdateNewsRequestContract,
+  IUpdateNewsResponseContract, IUserSubscriptionNewsRequestContract,
+  IUserSubscriptionNewsResponseContract
+} from "./contracts";
 
 @Controller()
 export class NewsController {
@@ -15,7 +17,7 @@ export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
   @EventPattern('create-news')
-  async createNews(@Payload() payload: {newsDto: CreateNewsDto, images: []}, @Ctx() context: RmqContext) {
+  async createNews(@Payload() payload: ICreateNewsRequestContract, @Ctx() context: RmqContext): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -24,7 +26,7 @@ export class NewsController {
       await channel.ack(originalMessage)
       this.logger.log(`CreateNews: Acknowledge message success`)
     } catch (error) {
-      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      this.logger.error(`Error: ${error}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
         this.logger.log(`CreateNews: Acknowledge message success`)
@@ -33,27 +35,29 @@ export class NewsController {
   }
 
   @MessagePattern('find-all-news')
-  async findAllNews(@Payload() dto: PaginationDto, @Ctx() context: RmqContext) {
+  async findAllNews(
+    @Payload() dto: IGetAllNewsRequestContract, @Ctx() context: RmqContext
+  ): Promise<IGetAllNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to find news`)
-      const news = await this.newsService.findAllNews(dto);
-      return news
+      return await this.newsService.findAllNews(dto);
     } finally {
-      this.logger.log(`GetAllNews: Acknowledge message success`)
+      this.logger.log(`FindAllNews: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
 
   @MessagePattern('user-subscriptions-news')
-  async getUserSubscriptionsNews(@Payload() payload, @Ctx() context: RmqContext) {
+  async getUserSubscriptionsNews(
+    @Payload() payload: IUserSubscriptionNewsRequestContract, @Ctx() context: RmqContext
+  ): Promise<IUserSubscriptionNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get user subscriptions news`)
-      const news = await this.newsService.getUserSubscriptionsNews(payload);
-      return news
+      return await this.newsService.getUserSubscriptionsNews(payload);
     } finally {
       this.logger.log(`GetUserSubscriptionNews: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -61,13 +65,14 @@ export class NewsController {
   }
 
   @MessagePattern('search-news')
-  async searchNews(@Payload() dto: SearchNewsDto, @Ctx() context: RmqContext) {
+  async searchNews(
+    @Payload() request: ISearchNewsRequestContract, @Ctx() context: RmqContext
+  ): Promise<ISearchNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to search news`)
-      const news = await this.newsService.searchNews(dto);
-      return news
+      return await this.newsService.searchNews(request);
     } finally {
       this.logger.log(`SearchNews: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -75,13 +80,12 @@ export class NewsController {
   }
 
   @MessagePattern('find-one-news')
-  async findOneNews(@Payload() id: number, @Ctx() context: RmqContext) {
+  async findOneNews(@Payload() id: number, @Ctx() context: RmqContext): Promise<IFindOneNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to find one news`)
-      const user = await this.newsService.findOneNews(id);
-      return user;
+      return await this.newsService.findOneNews(id);
     } finally {
       this.logger.log(`FindOneNews: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -89,13 +93,14 @@ export class NewsController {
   }
 
   @MessagePattern('update-news')
-  async updateNews(@Payload() payload: {newsDto: UpdateNewsDto, images: []}, @Ctx() context: RmqContext) {
+  async updateNews(
+    @Payload() request: IUpdateNewsRequestContract, @Ctx() context: RmqContext
+  ): Promise<IUpdateNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to update news`)
-      const news = await this.newsService.updateNews(payload.newsDto, payload.images);
-      return news
+      return await this.newsService.updateNews(request.newsDto, request.images);
     } finally {
       this.logger.log(`UpdateNews: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -103,13 +108,14 @@ export class NewsController {
   }
 
   @MessagePattern('delete-news')
-  async deleteNews(@Payload() dto: DeleteNewsDto, @Ctx() context: RmqContext) {
+  async deleteNews(
+    @Payload() request: IDeleteNewsRequestContract, @Ctx() context: RmqContext
+  ): Promise<IDeleteNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to delete news`)
-      const news = await this.newsService.deleteNews(dto);
-      return news
+      return await this.newsService.deleteNews(request);
     } finally {
       this.logger.log(`DeleteNews: Acknowledge message success`)
       await channel.ack(originalMessage);

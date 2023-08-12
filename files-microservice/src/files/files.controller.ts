@@ -19,7 +19,7 @@ export class FilesController {
       await channel.ack(originalMessage)
       this.logger.log(`CreateImages: Acknowledge message success`)
     } catch (error) {
-      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      this.logger.error(`Error: ${error}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
         this.logger.log(`CreateImages: Acknowledge message success`)
@@ -79,7 +79,7 @@ export class FilesController {
       await channel.ack(originalMessage)
       this.logger.log(`DeleteImages: Acknowledge message success`)
     } catch (error) {
-      this.logger.error(`Error: ${JSON.stringify(error)}`);
+      this.logger.error(`Error: ${error}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
         this.logger.log(`DeleteImages: Acknowledge message success`)

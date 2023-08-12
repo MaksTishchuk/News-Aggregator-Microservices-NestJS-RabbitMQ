@@ -1,4 +1,5 @@
 import {IsNotEmpty, IsNumber, IsOptional, IsString} from 'class-validator';
+import { File } from 'multer'
 
 export class CreateNewsDto {
   @IsNotEmpty()
@@ -10,5 +11,5 @@ export class CreateNewsDto {
   body: string;
 
   @IsOptional()
-  images?: any;
+  images?: File[];
 }

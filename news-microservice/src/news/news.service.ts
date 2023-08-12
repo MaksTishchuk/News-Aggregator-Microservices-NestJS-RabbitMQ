@@ -8,12 +8,16 @@ import {makeLoggerPayload} from "../common/logger.payload";
 import {LoggerDto} from "../common/dto/logger.dto";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
 import {RpcException} from "@nestjs/microservices";
-import {PaginationDto} from "../common/dto/pagination.dto";
 import {getPagination} from "../common/pagination";
-import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
-import {DeleteNewsDto} from "./dto/delete-news.dto";
 import {lastValueFrom} from "rxjs";
+import { File } from 'multer'
+import {
+  IDeleteNewsRequestContract, IDeleteNewsResponseContract, IFindOneNewsResponseContract,
+  IGetAllNewsRequestContract, IGetAllNewsResponseContract, ISearchNewsRequestContract,
+  ISearchNewsResponseContract, IUpdateNewsResponseContract, IUserSubscriptionNewsRequestContract,
+  IUserSubscriptionNewsResponseContract
+} from "./contracts";
 
 @Injectable()
 export class NewsService {
@@ -26,11 +30,11 @@ export class NewsService {
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
-  async createNews(createNewsDto: CreateNewsDto, images: []) {
+  async createNews(createNewsDto: CreateNewsDto, images: File[]): Promise<void> {
     try {
-      const news = this.newsRepository.create({...createNewsDto});
+      const news: NewsEntity = this.newsRepository.create({...createNewsDto});
       if (images) news.isImages = true
-      const createdNews = await this.newsRepository.save(news)
+      const createdNews: NewsEntity = await this.newsRepository.save(news)
       if (images) this.clientFiles.emit('create-images', {newsId: createdNews.id, images})
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.action,
@@ -47,8 +51,8 @@ export class NewsService {
     }
   }
 
-  async findAllNews(dto: PaginationDto): Promise<NewsEntity[]> {
-    const {perPage, skip} = getPagination(dto)
+  async findAllNews(data: IGetAllNewsRequestContract): Promise<IGetAllNewsResponseContract> {
+    const {perPage, skip} = getPagination(data)
     return await this.newsRepository.find({
       order: { createdAt: 'DESC' },
       take: perPage,
@@ -56,31 +60,43 @@ export class NewsService {
     });
   }
 
-  async searchNews(dto: SearchNewsDto) {
-    const {perPage, skip} = getPagination(dto)
+  async getUserSubscriptionsNews(
+    data: IUserSubscriptionNewsRequestContract
+  ): Promise<IUserSubscriptionNewsResponseContract> {
+    const {perPage, skip} = getPagination(data.pagination)
+    return await this.newsRepository.find({
+      where: {authorId: In(data.authorIds)},
+      order: {createdAt: 'DESC'},
+      take: perPage,
+      skip
+    });
+  }
+
+  async searchNews(data: ISearchNewsRequestContract): Promise<ISearchNewsResponseContract> {
+    const {perPage, skip} = getPagination(data)
     const qb = this.newsRepository.createQueryBuilder('n');
     qb.take(perPage);
     qb.skip(skip);
     qb.orderBy('id', 'DESC');
-    if (dto.title) qb.orWhere(`n.title ILIKE :title`);
-    if (dto.body) qb.orWhere(`n.body ILIKE :body`);
+    if (data.title) qb.orWhere(`n.title ILIKE :title`);
+    if (data.body) qb.orWhere(`n.body ILIKE :body`);
     qb.setParameters({
-      title: `%${dto.title}%`,
-      body: `%${dto.body}%`,
+      title: `%${data.title}%`,
+      body: `%${data.body}%`,
     });
     const [news, total] = await qb.getManyAndCount();
     return { news, total };
   }
 
-  async findOneNews(id: number): Promise<NewsEntity> {
-    const news = await this.findNewsById(id);
+  async findOneNews(id: number): Promise<IFindOneNewsResponseContract> {
+    const news: NewsEntity = await this.findNewsById(id);
     news.views += 1;
     await this.newsRepository.save(news);
     return news;
   }
 
   async findNewsById(id: number): Promise<NewsEntity> {
-    const news = await this.newsRepository.findOne({where: { id }});
+    const news: NewsEntity = await this.newsRepository.findOne({where: { id }});
     if (!news) {
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.error,
@@ -92,8 +108,8 @@ export class NewsService {
     return news;
   }
 
-  async updateNews(dto: UpdateNewsDto, images: []): Promise<NewsEntity> {
-    const news = await this.findNewsById(dto.id);
+  async updateNews(dto: UpdateNewsDto, images: File[]): Promise<IUpdateNewsResponseContract> {
+    const news: NewsEntity = await this.findNewsById(dto.id);
     if (news.authorId === dto.authorId) {
       const updatedNews = await this.newsRepository.createQueryBuilder()
         .update<NewsEntity>(NewsEntity, {...dto, isImages: images ? true : news.isImages})
@@ -121,30 +137,20 @@ export class NewsService {
     }
   }
 
-  async getUserSubscriptionsNews(payload) {
-    const {perPage, skip} = getPagination(payload.pagination)
-    return await this.newsRepository.find({
-      where: {authorId: In(payload.authorIds)},
-      order: {createdAt: 'DESC'},
-      take: perPage,
-      skip
-    });
-  }
-
-  async deleteNews(dto: DeleteNewsDto) {
-    const news = await this.findNewsById(dto.id);
-    if (news.authorId === dto.authorId) {
-      const result = await this.newsRepository.delete({ id: dto.id });
+  async deleteNews(data: IDeleteNewsRequestContract): Promise<IDeleteNewsResponseContract> {
+    const news: NewsEntity = await this.findNewsById(data.id);
+    if (news.authorId === data.authorId) {
+      const result = await this.newsRepository.delete({ id: data.id });
       if (!result.affected) {
         throw new RpcException(new NotFoundException(
-          `News with id "${dto.id}" was not deleted!`,
+          `News with id "${data.id}" was not deleted!`,
         ));
       }
       if (news.isImages) this.clientFiles.emit('delete-images', news.id)
       return { success: true, message: 'News has been deleted!' };
     } else {
       throw new RpcException(new BadRequestException(
-        `News with id "${dto.id}" was not deleted! Access denied!`,
+        `News with id "${data.id}" was not deleted! Access denied!`,
       ));
     }
   }

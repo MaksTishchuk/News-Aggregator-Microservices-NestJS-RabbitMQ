@@ -1,4 +1,3 @@
-export interface IGetAllUsersRequestContract {
-  page?: number
-  perPage?: number
-}
+import {IPaginationInterface} from "../../../common/interfaces/pagination.interface";
+
+export interface IGetAllUsersRequestContract extends IPaginationInterface{}

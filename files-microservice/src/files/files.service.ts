@@ -5,6 +5,7 @@ import {InjectModel} from "@nestjs/mongoose";
 import * as path from 'path';
 import * as fs from 'fs';
 import * as shortId from 'shortid';
+import { File } from 'multer'
 import {RpcException} from "@nestjs/microservices";
 import {ConfigService} from "@nestjs/config";
 
@@ -17,7 +18,7 @@ export class FilesService {
   ) {
   }
 
-  async createImages(newsId: number, images: []) {
+  async createImages(newsId: number, images: File[]) {
     if (images) {
       const imagesArray = []
       images.forEach((image) => imagesArray.push(this.createFile(image)))
@@ -54,7 +55,7 @@ export class FilesService {
     return newsImagesList
   }
 
-  async updateNewsImages(newsId: number, images: []) {
+  async updateNewsImages(newsId: number, images: File[]) {
     const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
     const imagesArray = []
     images.forEach((image) => imagesArray.push(this.createFile(image)))
