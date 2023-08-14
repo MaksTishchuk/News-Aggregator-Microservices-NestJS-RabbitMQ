@@ -1,6 +1,19 @@
 import {
-  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Put, Query, Res, UploadedFile,
-  UseGuards, UseInterceptors
+  Body,
+  Controller,
+  Delete,
+  Get, HttpStatus,
+  Logger,
+  Param,
+  ParseFilePipeBuilder,
+  ParseIntPipe,
+  Patch,
+  Put,
+  Query,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
 import { File } from 'multer'
 import {UserService} from "./user.service";
@@ -73,7 +86,13 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
   async updateUserAvatar(
-    @GetCurrentUserId() id: number, @UploadedFile() avatar: File
+    @GetCurrentUserId() id: number,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({fileType: /(jpg|jpeg|png|gif)$/})
+        .addMaxSizeValidator({maxSize: 5242880})
+        .build({errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY})
+    ) avatar: File
   ): Promise<IUpdateUserAvatarResponseContract> {
     this.logger.log(`Try to update user avatar`)
     return await this.userService.updateUserAvatar(id, avatar);

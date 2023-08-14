@@ -8,6 +8,7 @@ import * as shortId from 'shortid';
 import { File } from 'multer'
 import {RpcException} from "@nestjs/microservices";
 import {ConfigService} from "@nestjs/config";
+import {IGetImagesByNewsIdsListResponseContract} from "./contracts/get-images-by-news-ids-list/get-images-by-news-ids-list.response.contract";
 
 @Injectable()
 export class FilesService {
@@ -18,18 +19,18 @@ export class FilesService {
   ) {
   }
 
-  async createImages(newsId: number, images: File[]) {
+  async createImages(newsId: number, images: File[]): Promise<void> {
     if (images) {
-      const imagesArray = []
+      const imagesArray: string[] = []
       images.forEach((image) => imagesArray.push(this.createFile(image)))
       await this.filesModel.create({newsId, images: imagesArray, createdAt: Date.now()})
     }
   }
 
-  async getImagesUrls(newsId: number) {
+  async getImagesUrls(newsId: number): Promise<string[]> {
     const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
-    if (!newsImages) return []
     const imagesUrls = []
+    if (!newsImages) return imagesUrls
     newsImages.images.forEach((image) => {
       image = `${this.configService.get<string>('SERVER_URL')}/images/${image}`
       imagesUrls.push(image)
@@ -37,7 +38,7 @@ export class FilesService {
     return imagesUrls
   }
 
-  async getImagesListByNewsIds(newsIdsList: []) {
+  async getImagesListByNewsIds(newsIdsList: number[]): Promise<IGetImagesByNewsIdsListResponseContract> {
     const newsImagesByIds = await this.filesModel.find({newsId: {"$in": newsIdsList}})
     if (!newsImagesByIds) return []
     let newsImagesList = []
@@ -55,18 +56,18 @@ export class FilesService {
     return newsImagesList
   }
 
-  async updateNewsImages(newsId: number, images: File[]) {
+  async updateNewsImages(newsId: number, images: File[]): Promise<{success: boolean, message: string}> {
     const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
-    const imagesArray = []
+    const imagesArray: string[] = []
     images.forEach((image) => imagesArray.push(this.createFile(image)))
     if (newsImages) {
       await this.filesModel.updateOne({newsId}, {images: imagesArray, createdAt: Date.now()})
       newsImages.images.forEach((image) => this.removeFile(image))
     } else await this.filesModel.create({newsId, images: imagesArray, createdAt: Date.now()})
-    return {message: `Images for news with id ${newsId} has been updated!`}
+    return {success: true, message: `Images for news with id ${newsId} has been updated!`}
   }
 
-  async deleteImages(newsId) {
+  async deleteImages(newsId): Promise<void> {
     const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
     if (newsImages) {
       await this.filesModel.deleteOne({newsId})
@@ -74,7 +75,7 @@ export class FilesService {
     }
   }
 
-  createFile(file) {
+  createFile(file): string {
     try {
       const fileExtension = file.originalname.split('.').pop();
       const fileName = shortId.generate() + '.' + fileExtension;
@@ -91,7 +92,7 @@ export class FilesService {
     }
   }
 
-  removeFile(filePath: string) {
+  removeFile(filePath: string): void {
     const fullFilePath = path.resolve(__dirname, '..', '..', 'src', 'storage', 'uploads', filePath);
     try {
       fs.unlinkSync(fullFilePath);

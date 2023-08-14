@@ -7,11 +7,21 @@ import {PaginationDto} from "../common/dto/pagination.dto";
 import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
 import {
-  ICreateNewsRequestContract, IDeleteNewsRequestContract, IDeleteNewsResponseContract,
-  IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
-  IGetUsersByIdsResponseContract, ISearchNewsRequestContract, ISearchNewsResponseContract,
-  IUpdateNewsRequestContract, IUpdateNewsResponseContract, IUsersSubscriptionsResponseContract,
-  IUserSubscriptionNewsRequestContract, IUserSubscriptionNewsResponseContract
+  ICreateNewsRequestContract,
+  IDeleteNewsRequestContract,
+  IDeleteNewsResponseContract,
+  IFindOneNewsResponseContract,
+  IGetAllNewsRequestContract,
+  IGetAllNewsResponseContract,
+  IGetImagesByNewsIdsListResponseContract,
+  IGetUsersByIdsResponseContract,
+  ISearchNewsRequestContract,
+  ISearchNewsResponseContract,
+  IUpdateNewsRequestContract,
+  IUpdateNewsResponseContract,
+  IUsersSubscriptionsResponseContract,
+  IUserSubscriptionNewsRequestContract,
+  IUserSubscriptionNewsResponseContract
 } from "./contracts";
 import {INewsWithAuthor} from "./interfaces/news-with-author.interface";
 import {INewsWithAuthorImages} from "./interfaces/news-with-author-images";
@@ -119,7 +129,7 @@ export class NewsService {
   private async addImagesToNewsArray(news): Promise<INewsWithAuthorImages[]> {
     const newsIds: number[] = news.map((item) => item.id)
     const newsImagesResponse = this.clientFiles.send('get-images-by-news-ids-list', newsIds)
-    const newsImages: File[] = await lastValueFrom(newsImagesResponse)
+    const newsImages: IGetImagesByNewsIdsListResponseContract = await lastValueFrom(newsImagesResponse)
     return news.map((news) => {
       if (news.isImages) {
         const oneNewsImages = newsImages.find((item) => item.newsId === news.id);

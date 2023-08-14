@@ -1,6 +1,18 @@
 import {
-  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Post, Put, Query, UploadedFiles,
-  UseGuards, UseInterceptors
+  Body,
+  Controller,
+  Delete,
+  Get, HttpStatus,
+  Logger,
+  Param,
+  ParseFilePipeBuilder,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
 import {GetCurrentUserId} from "../auth/decorators/get-current-user-id.decorator";
@@ -14,6 +26,7 @@ import {FileFieldsInterceptor} from "@nestjs/platform-express";
 import {INewsWithAuthorImages} from "./interfaces/news-with-author-images";
 import {SearchNewsInterface} from "./interfaces/search-news.interface";
 import {IDeleteNewsResponseContract} from "./contracts";
+import {ImagesInterceptor} from "../common/interceptors/images.interceptor";
 
 @Controller('news')
 export class NewsController {
@@ -24,9 +37,14 @@ export class NewsController {
 
   @Post('')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]),
+    ImagesInterceptor
+  )
   async createNews(
-    @GetCurrentUserId() authorId: number, @Body() dto: CreateNewsDto, @UploadedFiles() images
+    @GetCurrentUserId() authorId: number,
+    @Body() dto: CreateNewsDto,
+    @UploadedFiles() images
   ): Promise<{ success: boolean, message: string }> {
     this.logger.log(`Try to create news`)
     return await this.newsService.createNews(authorId, dto, images.images);
@@ -61,7 +79,10 @@ export class NewsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]),
+    ImagesInterceptor
+  )
   async updateNews(
     @Param('id', ParseIntPipe) id: number,
     @GetCurrentUserId() authorId: number,

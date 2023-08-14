@@ -2,6 +2,7 @@ import {Controller, Logger} from '@nestjs/common';
 import { FilesService } from './files.service';
 import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {AckErrors} from "../common/ack-errors";
+import {IGetImagesByNewsIdsListResponseContract} from "./contracts/get-images-by-news-ids-list/get-images-by-news-ids-list.response.contract";
 
 @Controller('files')
 export class FilesController {
@@ -42,7 +43,9 @@ export class FilesController {
   }
 
   @MessagePattern('get-images-by-news-ids-list')
-  async getImagesListByNewsIds(@Payload() newsIdsList: [], @Ctx() context: RmqContext) {
+  async getImagesListByNewsIds(
+    @Payload() newsIdsList: [], @Ctx() context: RmqContext
+  ): Promise<IGetImagesByNewsIdsListResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
