@@ -7,12 +7,15 @@ import {LoggerDto} from "../common/dto/logger.dto";
 import {makeLoggerPayload} from "../common/logger.payload";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
 import {RpcException} from "@nestjs/microservices";
-import {CreateCommentDto} from "./dto/create-comment.dto";
 import {NewsEntity} from "../entities/news.entity";
-import {PaginationDto} from "../common/dto/pagination.dto";
 import {getPagination} from "../common/pagination";
-import {UpdateCommentDto} from "./dto/update-comment.dto";
-import {DeleteCommentDto} from "./dto/delete-comment.dto";
+import {
+  ICreateCommentRequestContract, ICreateCommentResponseContract, IDeleteCommentRequestContract,
+  IDeleteCommentResponseContract, IFindAllCommentsRequestContract, IFindAllCommentsResponseContract,
+  IFindCommentByIdResponseContract, IFindNewsCommentsResponseContract, IUpdateCommentRequestContract,
+  IUpdateCommentResponseContract
+} from "./contracts";
+import {IPaginationInterface} from "../common/interfaces/pagination.interface";
 
 @Injectable()
 export class CommentsService {
@@ -27,22 +30,23 @@ export class CommentsService {
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
-  async createComment(dto: CreateCommentDto) {
-    const news = await this.newsRepository.findOne({where: {id: dto.newsId}})
+  async createComment(data: ICreateCommentRequestContract): Promise<ICreateCommentResponseContract> {
+    const news: NewsEntity = await this.newsRepository.findOne({where: {id: data.newsId}})
     if (!news) {
-      throw new RpcException(new NotFoundException(`News with id "${dto.newsId}" was not found!`));
+      throw new RpcException(new NotFoundException(`News with id "${data.newsId}" was not found!`));
     }
     let parentComment = null
-    if (dto.parentCommentId) {
-      parentComment = await this.findCommentById(dto.parentCommentId)
+    if (data.parentCommentId) {
+      parentComment = await this.findCommentById(data.parentCommentId)
     }
     try {
-      const comment = this.commentRepository.create({
-        ...dto,
+      let comment: CommentEntity = this.commentRepository.create({
+        ...data,
         news,
         replyTo: parentComment
       })
-      return await this.commentRepository.save(comment)
+      comment = await this.commentRepository.save(comment)
+      return comment
     } catch (err) {
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.error,
@@ -53,8 +57,8 @@ export class CommentsService {
     }
   }
 
-  async findAllComments(dto: PaginationDto) {
-    const {perPage, skip} = getPagination(dto)
+  async findAllComments(data: IFindAllCommentsRequestContract): Promise<IFindAllCommentsResponseContract> {
+    const {perPage, skip} = getPagination(data)
     return await this.commentRepository.find({
       where: {parentCommentId: IsNull()},
       relations: ['replies'],
@@ -64,8 +68,8 @@ export class CommentsService {
     });
   }
 
-  async findNewsComments(newsId: number, dto: PaginationDto) {
-    const {perPage, skip} = getPagination(dto)
+  async findNewsComments(newsId: number, data: IPaginationInterface): Promise<IFindNewsCommentsResponseContract> {
+    const {perPage, skip} = getPagination(data)
     return await this.commentRepository.find({
       where: {newsId, parentCommentId: IsNull()},
       relations: ['replies'],
@@ -75,15 +79,15 @@ export class CommentsService {
     });
   }
 
-  async findCommentById(id: number) {
-    const comment = await this.commentRepository.findOne({where: { id }, relations: ['replies']});
+  async findCommentById(id: number): Promise<IFindCommentByIdResponseContract> {
+    const comment: CommentEntity = await this.commentRepository.findOne({where: { id }, relations: ['replies']});
     if (!comment) {
       throw new RpcException(new NotFoundException(`Comment with id "${id}" was not found!`));
     }
     return comment;
   }
 
-  async updateComment(dto: UpdateCommentDto) {
+  async updateComment(dto: IUpdateCommentRequestContract): Promise<IUpdateCommentResponseContract> {
     const comment = await this.findCommentById(dto.commentId);
     if (comment.authorId === dto.authorId) {
       const updatedComment = await this.commentRepository.createQueryBuilder()
@@ -103,27 +107,27 @@ export class CommentsService {
     }
   }
 
-  async deleteComment(dto: DeleteCommentDto) {
-    const comment = await this.findCommentById(dto.commentId);
-    if (comment.authorId === dto.authorId) {
+  async deleteComment(data: IDeleteCommentRequestContract): Promise<IDeleteCommentResponseContract> {
+    const comment = await this.findCommentById(data.commentId);
+    if (comment.authorId === data.authorId) {
       let result
       if (comment.repliesCount === 0) {
-        result = await this.commentRepository.delete({id: dto.commentId});
+        result = await this.commentRepository.delete({id: data.commentId});
       } else {
         result = await this.commentRepository.update(
-          {id: dto.commentId},
+          {id: data.commentId},
           {text: 'DELETED', isDeleted: true},
         )
       }
       if (!result.affected) {
         throw new RpcException(new NotFoundException(
-          `Comment with id "${dto.commentId}" has not been deleted!`,
+          `Comment with id "${data.commentId}" has not been deleted!`,
         ));
       }
       return {success: true, message: 'Comment has been deleted!' };
     } else {
       throw new RpcException(new BadRequestException(
-        `Comment with id "${dto.commentId}" has not been deleted! Access denied!`,
+        `Comment with id "${data.commentId}" has not been deleted! Access denied!`,
       ));
     }
   }

@@ -11,6 +11,8 @@ import {GetCurrentUserId} from "../auth/decorators/get-current-user-id.decorator
 import {CreateCommentDto} from "./dto/create-comment.dto";
 import {PaginationDto} from "../common/dto/pagination.dto";
 import {UpdateCommentDto} from "./dto/update-comment.dto";
+import {ICommentWithAuthor} from "./interfaces/comment-with-author.interface";
+import {IDeleteCommentResponseContract} from "./contracts";
 
 
 @Controller('comments')
@@ -21,25 +23,31 @@ export class CommentsController {
 
   @Post('')
   @UseGuards(JwtAuthGuard)
-  async createComment(@GetCurrentUserId() id: number, @Body() dto: CreateCommentDto) {
+  async createComment(
+    @GetCurrentUserId() id: number, @Body() dto: CreateCommentDto
+  ): Promise<ICommentWithAuthor> {
     this.logger.log(`User with id "${id}" try to create comment`)
     return await this.commentsService.createComment(id, dto);
   }
 
   @Get('')
-  async findAllComments(@Query() dto: PaginationDto) {
+  async findAllComments(@Query() dto: PaginationDto): Promise<ICommentWithAuthor[]> {
     this.logger.log(`Try to find all comments`)
     return await this.commentsService.findAllComments(dto);
   }
 
   @Get('for-news')
-  async findNewsComments(@Query() dto: PaginationDto, @Body('newsId', ParseIntPipe) newsId: number) {
+  async findNewsComments(
+    @Query() dto: PaginationDto, @Body('newsId', ParseIntPipe) newsId: number
+  ): Promise<ICommentWithAuthor[]> {
     this.logger.log(`Try to find comments for news with id "${newsId}"`)
     return await this.commentsService.findNewsComments(newsId, dto);
   }
 
   @Get(':commentId')
-  async findCommentById(@Param('commentId', ParseIntPipe) commentId: number) {
+  async findCommentById(
+    @Param('commentId', ParseIntPipe) commentId: number
+  ): Promise<ICommentWithAuthor> {
     this.logger.log(`Try to find comment by id "${commentId}"`)
     return await this.commentsService.findCommentById(commentId);
   }
@@ -50,7 +58,7 @@ export class CommentsController {
     @Param('commentId', ParseIntPipe) commentId: number,
     @GetCurrentUserId() authorId: number,
     @Body() dto: UpdateCommentDto
-  ) {
+  ): Promise<ICommentWithAuthor> {
     this.logger.log(`User with id "${authorId}" try to update comment with id "${commentId}"`)
     return await this.commentsService.updateComment(commentId, authorId, dto);
   }
@@ -60,7 +68,7 @@ export class CommentsController {
   async deleteComment(
     @Param('commentId', ParseIntPipe) commentId: number,
     @GetCurrentUserId() authorId: number
-  ) {
+  ): Promise<IDeleteCommentResponseContract> {
     this.logger.log(`User with id "${authorId}" try to delete comment with id "${commentId}"`)
     return await this.commentsService.deleteComment(commentId, authorId);
   }
