@@ -1,19 +1,6 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get, HttpStatus,
-  Logger,
-  Param,
-  ParseFilePipeBuilder,
-  ParseIntPipe,
-  Patch,
-  Put,
-  Query,
-  Res,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors
+  Body, Controller, Delete, Get, HttpStatus, Logger, Param, ParseFilePipeBuilder, ParseIntPipe,
+  Patch, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors
 } from '@nestjs/common';
 import { File } from 'multer'
 import {UserService} from "./user.service";

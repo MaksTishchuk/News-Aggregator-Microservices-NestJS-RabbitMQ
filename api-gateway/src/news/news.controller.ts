@@ -1,18 +1,6 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get, HttpStatus,
-  Logger,
-  Param,
-  ParseFilePipeBuilder,
-  ParseIntPipe,
-  Post,
-  Put,
-  Query,
-  UploadedFiles,
-  UseGuards,
-  UseInterceptors
+  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Post, Put, Query, UploadedFiles,
+  UseGuards, UseInterceptors
 } from '@nestjs/common';
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
 import {GetCurrentUserId} from "../auth/decorators/get-current-user-id.decorator";

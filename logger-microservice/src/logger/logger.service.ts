@@ -13,12 +13,12 @@ export class LoggerService {
 
   constructor(@InjectModel(LoggerModel.name) private readonly loggerModel: Model<LoggerDocument>) {}
 
-  async createLog(dto: LoggerDto) {
+  async createLog(dto: LoggerDto): Promise<void> {
     await this.loggerModel.create({...dto, createdAt: Date.now()})
     this.makeLog(dto)
   }
 
-  async getAllLogs(dto: LogsTypeDto) {
+  async getAllLogs(dto: LogsTypeDto): Promise<LoggerModel[]> {
     const {perPage, skip} = getPagination(dto)
     let filter = {}
     if (dto.type) filter = {type: dto.type}
@@ -29,7 +29,7 @@ export class LoggerService {
       .skip(skip);
   }
 
-  async clearLogs(dto: LogsTypeDto) {
+  async clearLogs(dto: LogsTypeDto): Promise<void> {
     let filter = {}
     let info = ''
     if (dto.type) {
@@ -43,7 +43,7 @@ export class LoggerService {
     })
   }
 
-  makeLog(dto: LoggerDto) {
+  makeLog(dto: LoggerDto): void {
     const additionalInfo = dto.additionalInfo ? `- ${dto.additionalInfo}` :  ''
     switch (dto.type) {
       case LogTypeEnum.action:

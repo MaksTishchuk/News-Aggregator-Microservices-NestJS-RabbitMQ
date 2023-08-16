@@ -3,8 +3,6 @@ import {
   Delete,
   Get,
   Logger,
-  Param,
-  ParseIntPipe,
   Query,
   UseGuards
 } from '@nestjs/common';
@@ -16,6 +14,7 @@ import {LogsTypeDto} from "./dto/logs-type.dto";
 import {LoggerDto} from "../common/dto/logger.dto";
 import {makeLoggerPayload} from "../common/utils/logger.payload";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
+import {IGetAllLogsResponseContract} from "./contracts";
 
 @Controller('logs')
 export class LoggerController {
@@ -26,15 +25,15 @@ export class LoggerController {
   constructor(private readonly logsService: LoggerService, private clientProxyRMQ: ClientProxyRMQ) {}
 
   @Get('')
-  @UseGuards(JwtAuthGuard, )
-  async findAllLogs(@Query() dto: LogsTypeDto) {
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  async findAllLogs(@Query() dto: LogsTypeDto): Promise<IGetAllLogsResponseContract> {
     this.logger.log(`Try to find all logs`)
     return await this.logsService.findAllLogs(dto);
   }
 
   @Delete('clear')
-  @UseGuards(JwtAuthGuard,)
-  async clearLogs(@Query() dto: LogsTypeDto) {
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  async clearLogs(@Query() dto: LogsTypeDto): Promise<void> {
     this.logger.log(`Try to clear logs`)
     const payload: LoggerDto = makeLoggerPayload(LogTypeEnum.action, `Try to clear logs`)
     this.clientLogger.emit('create-log', payload)

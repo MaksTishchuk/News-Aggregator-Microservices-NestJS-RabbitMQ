@@ -7,20 +7,11 @@ import {PaginationDto} from "../common/dto/pagination.dto";
 import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
 import {
-  ICreateNewsRequestContract,
-  IDeleteNewsRequestContract,
-  IDeleteNewsResponseContract,
-  IFindOneNewsResponseContract,
-  IGetAllNewsRequestContract,
-  IGetAllNewsResponseContract,
-  IGetImagesByNewsIdsListResponseContract,
-  IGetUsersByIdsResponseContract,
-  ISearchNewsRequestContract,
-  ISearchNewsResponseContract,
-  IUpdateNewsRequestContract,
-  IUpdateNewsResponseContract,
-  IUsersSubscriptionsResponseContract,
-  IUserSubscriptionNewsRequestContract,
+  ICreateNewsRequestContract, IDeleteNewsRequestContract, IDeleteNewsResponseContract,
+  IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
+  IGetImagesByNewsIdsListResponseContract, IGetUsersByIdsResponseContract, ISearchNewsRequestContract,
+  ISearchNewsResponseContract, IUpdateNewsRequestContract, IUpdateNewsResponseContract,
+  IUsersSubscriptionsResponseContract, IUserSubscriptionNewsRequestContract,
   IUserSubscriptionNewsResponseContract
 } from "./contracts";
 import {INewsWithAuthor} from "./interfaces/news-with-author.interface";
