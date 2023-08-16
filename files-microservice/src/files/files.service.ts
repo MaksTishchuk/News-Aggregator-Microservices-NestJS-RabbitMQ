@@ -97,7 +97,7 @@ export class FilesService {
     try {
       fs.unlinkSync(fullFilePath);
     } catch (err) {
-      console.log('File with this path was not found!')
+      console.log(`File with path ${fullFilePath} was not found!`)
     }
   }
 }

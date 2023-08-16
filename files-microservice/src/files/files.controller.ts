@@ -11,7 +11,9 @@ export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @EventPattern('create-images')
-  async createImages(@Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext) {
+  async createImages(
+    @Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext
+  ): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -29,7 +31,7 @@ export class FilesController {
   }
 
   @MessagePattern('get-images-by-news-id')
-  async getImagesUrls(@Payload() newsId: number, @Ctx() context: RmqContext) {
+  async getImagesUrls(@Payload() newsId: number, @Ctx() context: RmqContext): Promise<string[]> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -59,7 +61,9 @@ export class FilesController {
   }
 
   @MessagePattern('update-images')
-  async updateNewsImages(@Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext) {
+  async updateNewsImages(
+    @Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext
+  ): Promise<{success: boolean, message: string}> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
@@ -73,7 +77,7 @@ export class FilesController {
   }
 
   @EventPattern('delete-images')
-  async deleteImages(@Payload() newsId, @Ctx() context: RmqContext) {
+  async deleteImages(@Payload() newsId, @Ctx() context: RmqContext): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
