@@ -36,9 +36,9 @@ const resizeImage = async (imageBuffer: Buffer): Promise<Buffer> => {
   const imageWidth = 500
   const imageHeight = 500
 
-  // Обрезка изобаржения в пропорции до нужного размера с сохранением пропорций
+  // Уменьшение изобаржения в пропорции до нужного размера с сохранением пропорций
   const resizedImageBuffer = await sharp(imageBuffer)
-    .resize({width: imageWidth, height: imageHeight, fit: 'inside'})
+    .resize({width: imageWidth, height: imageHeight, fit: 'inside', withoutEnlargement: true})
     .toBuffer();
 
   const metadata = await sharp(resizedImageBuffer).metadata();
