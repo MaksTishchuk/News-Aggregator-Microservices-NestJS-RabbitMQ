@@ -144,7 +144,7 @@ export class UserService {
     data: IUpdateUserAvatarRequestContract
   ): Promise<IUpdateUserAvatarResponseContract> {
     if (data.avatar) {
-      const avatar = createFile(data.avatar);
+      const avatar = await createFile(data.avatar);
       return await this.updateUserProfile({id: data.id, avatar})
     }
     return await this.getUserById(data.id)
