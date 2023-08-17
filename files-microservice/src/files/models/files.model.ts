@@ -12,6 +12,9 @@ export class FilesModel {
   @Prop({default: []})
   images: string[]
 
+  @Prop({default: []})
+  videos: string[]
+
   @Prop({required: true, default: Date.now})
   createdAt: Date
 }

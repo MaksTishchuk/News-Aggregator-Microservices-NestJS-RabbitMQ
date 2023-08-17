@@ -1,6 +1,6 @@
-import {INewsWithAuthorImages} from "./news-with-author-images";
+import {INewsWithAuthorFiles} from "./news-with-author-files";
 
 export interface SearchNewsInterface {
-  news: INewsWithAuthorImages[],
+  news: INewsWithAuthorFiles[],
   total: number
 }

@@ -15,7 +15,7 @@ import { FilesModule } from './files/files.module';
       useFactory: getMongoConfig
     }),
     ServeStaticModule.forRoot({
-      serveRoot: '/images',
+      serveRoot: '/files',
       rootPath: path.resolve(__dirname, '..', 'src', 'storage', 'uploads'),
     }),
     FilesModule,

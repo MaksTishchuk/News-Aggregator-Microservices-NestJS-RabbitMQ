@@ -1,8 +1,12 @@
 import {Controller, Logger} from '@nestjs/common';
-import { FilesService } from './files.service';
+import {FilesService} from './files.service';
 import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {AckErrors} from "../common/ack-errors";
-import {IGetImagesByNewsIdsListResponseContract} from "./contracts/get-images-by-news-ids-list/get-images-by-news-ids-list.response.contract";
+import {
+  ICreateFilesRequestContract, IGetFilesByNewsIdResponseContract,
+  IGetFilesByNewsIdsListResponseContract, IUpdateFilesRequestContract
+} from "./contracts";
+
 
 @Controller('files')
 export class FilesController {
@@ -10,86 +14,85 @@ export class FilesController {
 
   constructor(private readonly filesService: FilesService) {}
 
-  @EventPattern('create-images')
-  async createImages(
-    @Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext
+  @EventPattern('create-files')
+  async createFiles(
+    @Payload() payload: ICreateFilesRequestContract, @Ctx() context: RmqContext
   ): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
-      this.logger.log(`Try to create images`)
-      await this.filesService.createImages(payload.newsId, payload.images)
+      this.logger.log(`Try to create files`)
+      await this.filesService.createFiles(payload.newsId, payload.images, payload.videos)
       await channel.ack(originalMessage)
-      this.logger.log(`CreateImages: Acknowledge message success`)
+      this.logger.log(`CreateFiles: Acknowledge message success`)
     } catch (error) {
       this.logger.error(`Error: ${error}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
-        this.logger.log(`CreateImages: Acknowledge message success`)
+        this.logger.log(`CreateFiles: Acknowledge message success`)
       }
     }
   }
 
-  @MessagePattern('get-images-by-news-id')
-  async getImagesUrls(@Payload() newsId: number, @Ctx() context: RmqContext): Promise<string[]> {
+  @MessagePattern('get-files-by-news-id')
+  async getFilesUrls(
+    @Payload() newsId: number, @Ctx() context: RmqContext
+  ): Promise<IGetFilesByNewsIdResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
-      this.logger.log(`Try to get images urls`)
-      const imagesUrls = await this.filesService.getImagesUrls(newsId);
-      return imagesUrls;
+      this.logger.log(`Try to get files urls`)
+      return await this.filesService.getFilesUrls(newsId);
     } finally {
-      this.logger.log(`GetImagesUrls: Acknowledge message success`)
+      this.logger.log(`GetFilesUrls: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
 
-  @MessagePattern('get-images-by-news-ids-list')
-  async getImagesListByNewsIds(
+  @MessagePattern('get-files-by-news-ids-list')
+  async getFilesListByNewsIds(
     @Payload() newsIdsList: [], @Ctx() context: RmqContext
-  ): Promise<IGetImagesByNewsIdsListResponseContract> {
+  ): Promise<IGetFilesByNewsIdsListResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
-      this.logger.log(`Try to get images list by ids`)
-      const imagesList = await this.filesService.getImagesListByNewsIds(newsIdsList);
-      return imagesList;
+      this.logger.log(`Try to get files list by ids`)
+      return await this.filesService.getFilesListByNewsIds(newsIdsList);
     } finally {
-      this.logger.log(`GetImagesList: Acknowledge message success`)
+      this.logger.log(`GetFilesList: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
 
-  @MessagePattern('update-images')
-  async updateNewsImages(
-    @Payload() payload: {newsId: number, images: []}, @Ctx() context: RmqContext
+  @MessagePattern('update-files')
+  async updateNewsFiles(
+    @Payload() payload: IUpdateFilesRequestContract, @Ctx() context: RmqContext
   ): Promise<{success: boolean, message: string}> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
-      this.logger.log(`Try to update news images urls`)
-      const response = await this.filesService.updateNewsImages(payload.newsId, payload.images)
-      return response;
+      this.logger.log(`Try to update news files urls`)
+      return await this.filesService.updateNewsFiles(payload.newsId, payload.images, payload.videos);
     } finally {
-      this.logger.log(`UpdateNewsImages: Acknowledge message success`)
+      this.logger.log(`UpdateNewsFiles: Acknowledge message success`)
       await channel.ack(originalMessage);
     }
   }
 
-  @EventPattern('delete-images')
+  @EventPattern('delete-files')
   async deleteImages(@Payload() newsId, @Ctx() context: RmqContext): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
-      this.logger.log(`Try to delete images`)
-      await this.filesService.deleteImages(newsId)
+      this.logger.log(`Try to delete files`)
+      await this.filesService.deleteFiles(newsId)
       await channel.ack(originalMessage)
-      this.logger.log(`DeleteImages: Acknowledge message success`)
+      this.logger.log(`DeleteFiles: Acknowledge message success`)
     } catch (error) {
       this.logger.error(`Error: ${error}`);
       if (AckErrors.hasAckErrors(error.message)) {
         await channel.ack(originalMessage)
-        this.logger.log(`DeleteImages: Acknowledge message success`)
+        this.logger.log(`DeleteFiles: Acknowledge message success`)
       }
     }
   }

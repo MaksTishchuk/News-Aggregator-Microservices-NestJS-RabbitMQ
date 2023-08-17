@@ -28,6 +28,9 @@ export class NewsEntity {
   @Column({ default: false })
   isImages: boolean;
 
+  @Column({ default: false })
+  isVideos: boolean;
+
   @Column({ default: 0 })
   views: number;
 

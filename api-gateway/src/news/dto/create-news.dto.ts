@@ -12,4 +12,7 @@ export class CreateNewsDto {
 
   @IsOptional()
   images?: File[];
+
+  @IsOptional()
+  video?: File;
 }

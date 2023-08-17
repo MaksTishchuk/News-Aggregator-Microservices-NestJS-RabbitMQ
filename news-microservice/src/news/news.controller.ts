@@ -17,12 +17,12 @@ export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
   @EventPattern('create-news')
-  async createNews(@Payload() payload: ICreateNewsRequestContract, @Ctx() context: RmqContext): Promise<void> {
+  async createNews(@Payload() request: ICreateNewsRequestContract, @Ctx() context: RmqContext): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to create news`)
-      await this.newsService.createNews(payload.newsDto, payload.images)
+      await this.newsService.createNews(request.newsDto, request.images, request.videos)
       await channel.ack(originalMessage)
       this.logger.log(`CreateNews: Acknowledge message success`)
     } catch (error) {
@@ -36,13 +36,13 @@ export class NewsController {
 
   @MessagePattern('find-all-news')
   async findAllNews(
-    @Payload() dto: IGetAllNewsRequestContract, @Ctx() context: RmqContext
+    @Payload() request: IGetAllNewsRequestContract, @Ctx() context: RmqContext
   ): Promise<IGetAllNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to find news`)
-      return await this.newsService.findAllNews(dto);
+      return await this.newsService.findAllNews(request);
     } finally {
       this.logger.log(`FindAllNews: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -51,13 +51,13 @@ export class NewsController {
 
   @MessagePattern('user-subscriptions-news')
   async getUserSubscriptionsNews(
-    @Payload() payload: IUserSubscriptionNewsRequestContract, @Ctx() context: RmqContext
+    @Payload() request: IUserSubscriptionNewsRequestContract, @Ctx() context: RmqContext
   ): Promise<IUserSubscriptionNewsResponseContract> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to get user subscriptions news`)
-      return await this.newsService.getUserSubscriptionsNews(payload);
+      return await this.newsService.getUserSubscriptionsNews(request);
     } finally {
       this.logger.log(`GetUserSubscriptionNews: Acknowledge message success`)
       await channel.ack(originalMessage);
@@ -100,7 +100,7 @@ export class NewsController {
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to update news`)
-      return await this.newsService.updateNews(request.newsDto, request.images);
+      return await this.newsService.updateNews(request.newsDto, request.images, request.videos);
     } finally {
       this.logger.log(`UpdateNews: Acknowledge message success`)
       await channel.ack(originalMessage);

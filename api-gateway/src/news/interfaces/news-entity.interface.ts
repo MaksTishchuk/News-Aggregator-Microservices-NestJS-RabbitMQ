@@ -4,6 +4,7 @@ export interface INewsEntity {
   title: string
   body: string
   isImages: boolean
+  isVideos: boolean
   views: number
   createdAt: Date
   updatedAt: Date

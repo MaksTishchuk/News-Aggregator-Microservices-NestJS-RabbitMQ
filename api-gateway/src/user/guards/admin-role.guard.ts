@@ -7,7 +7,7 @@ export class AdminRoleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest()
     if (request?.user) {
       if (request.user['role'] === UserRoleEnum.ADMIN) return true
-      throw new UnauthorizedException('User without Admin role can`t delete users!')
+      throw new UnauthorizedException('User without Admin role can`t make this request!')
     }
     return false
   }

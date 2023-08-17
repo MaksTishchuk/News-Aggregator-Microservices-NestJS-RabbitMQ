@@ -7,5 +7,6 @@ export interface IUpdateNewsRequestContract {
     title?: string;
     body?: string
   }
-  images: File[] | undefined
+  images?: File[] | undefined
+  videos?: File[] | undefined
 }

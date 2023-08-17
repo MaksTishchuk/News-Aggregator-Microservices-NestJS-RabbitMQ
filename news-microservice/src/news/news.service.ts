@@ -13,10 +13,10 @@ import {UpdateNewsDto} from "./dto/update-news.dto";
 import {lastValueFrom} from "rxjs";
 import { File } from 'multer'
 import {
-  IDeleteNewsRequestContract, IDeleteNewsResponseContract, IFindOneNewsResponseContract,
-  IGetAllNewsRequestContract, IGetAllNewsResponseContract, ISearchNewsRequestContract,
-  ISearchNewsResponseContract, IUpdateNewsResponseContract, IUserSubscriptionNewsRequestContract,
-  IUserSubscriptionNewsResponseContract
+  ICreateFilesRequestContract, IDeleteNewsRequestContract, IDeleteNewsResponseContract,
+  IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
+  ISearchNewsRequestContract, ISearchNewsResponseContract, IUpdateFilesRequestContract,
+  IUpdateNewsResponseContract, IUserSubscriptionNewsRequestContract, IUserSubscriptionNewsResponseContract
 } from "./contracts";
 
 @Injectable()
@@ -30,12 +30,16 @@ export class NewsService {
     private clientProxyRMQ: ClientProxyRMQ
   ) {}
 
-  async createNews(createNewsDto: CreateNewsDto, images: File[]): Promise<void> {
+  async createNews(createNewsDto: CreateNewsDto, images: File[], videos: File[]): Promise<void> {
     try {
       const news: NewsEntity = this.newsRepository.create({...createNewsDto});
       if (images) news.isImages = true
+      if (videos) news.isVideos = true
       const createdNews: NewsEntity = await this.newsRepository.save(news)
-      if (images) this.clientFiles.emit('create-images', {newsId: createdNews.id, images})
+      if (images || videos) {
+        const payload: ICreateFilesRequestContract = {newsId: createdNews.id, images, videos}
+        this.clientFiles.emit('create-files', payload)
+      }
       const payload: LoggerDto = makeLoggerPayload(
         LogTypeEnum.action,
         `CreateNews: User with id "${createNewsDto.authorId}" created news!`
@@ -108,11 +112,12 @@ export class NewsService {
     return news;
   }
 
-  async updateNews(dto: UpdateNewsDto, images: File[]): Promise<IUpdateNewsResponseContract> {
+  async updateNews(dto: UpdateNewsDto, images: File[], videos: File[]): Promise<IUpdateNewsResponseContract> {
     const news: NewsEntity = await this.findNewsById(dto.id);
     if (news.authorId === dto.authorId) {
+      const updateSet = {...dto, isImages: images ? true : news.isImages, isVideos: videos ? true : news.isVideos}
       const updatedNews = await this.newsRepository.createQueryBuilder()
-        .update<NewsEntity>(NewsEntity, {...dto, isImages: images ? true : news.isImages})
+        .update<NewsEntity>(NewsEntity, updateSet)
         .where('id = :id', {id: dto.id})
         .returning('*')
         .updateEntity(true)
@@ -125,9 +130,10 @@ export class NewsService {
         this.clientLogger.emit('create-log', payload)
         throw new RpcException(new BadRequestException(`News with id "${dto.id}" has not been updated!`))
       }
-      if (images) {
-        const updateImagesResponse = this.clientFiles.send('update-images', {newsId: dto.id, images})
-        await lastValueFrom(updateImagesResponse)
+      if (images || videos) {
+        const payload: IUpdateFilesRequestContract = {newsId: dto.id, images, videos}
+        const updateFilesResponse = this.clientFiles.send('update-files', payload)
+        await lastValueFrom(updateFilesResponse)
       }
       return updatedNews.raw[0]
     } else {
@@ -146,7 +152,7 @@ export class NewsService {
           `News with id "${data.id}" was not deleted!`,
         ));
       }
-      if (news.isImages) this.clientFiles.emit('delete-images', news.id)
+      if (news.isImages) this.clientFiles.emit('delete-files', news.id)
       return { success: true, message: 'News has been deleted!' };
     } else {
       throw new RpcException(new BadRequestException(

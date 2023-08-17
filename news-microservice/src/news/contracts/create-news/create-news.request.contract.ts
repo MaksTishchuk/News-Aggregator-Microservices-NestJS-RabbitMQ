@@ -6,5 +6,6 @@ export interface ICreateNewsRequestContract {
     title: string
     body: string
   }
-  images: File[]
+  images?: File[]
+  videos?: File[]
 }

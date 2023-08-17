@@ -6,12 +6,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as shortId from 'shortid';
 import * as sharp from 'sharp'
-import { File } from 'multer'
+import {File} from 'multer'
 import {RpcException} from "@nestjs/microservices";
 import {ConfigService} from "@nestjs/config";
 import {
-  IGetImagesByNewsIdsListResponseContract
-} from "./contracts/get-images-by-news-ids-list/get-images-by-news-ids-list.response.contract";
+  IGetFilesByNewsIdResponseContract,
+  IGetFilesByNewsIdsListResponseContract
+} from "./contracts";
+import {FileTypeEnum} from "./enums/file-type.enum";
 
 @Injectable()
 export class FilesService {
@@ -22,80 +24,116 @@ export class FilesService {
   ) {
   }
 
-  async createImages(newsId: number, images: File[]): Promise<void> {
-    if (images) {
-      const imagesArray: string[] = []
-      for (const image of images) {
-        const imagePath = await FilesService.createFile(image)
-        imagesArray.push(imagePath)
-      }
-      await this.filesModel.create({newsId, images: imagesArray, createdAt: Date.now()})
-    }
+  async createFiles(newsId: number, images: File[], videos: File[]): Promise<void> {
+    const {imagesArray, videosArray} = await FilesService.saveFiles(images, videos)
+    await this.filesModel.create({newsId, images: imagesArray, videos: videosArray, createdAt: Date.now()})
   }
 
-  async getImagesUrls(newsId: number): Promise<string[]> {
-    const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
-    const imagesUrls = []
-    if (!newsImages) return imagesUrls
-    newsImages.images.forEach((image) => {
-      image = `${this.configService.get<string>('SERVER_URL')}/images/${image}`
-      imagesUrls.push(image)
-    })
-    return imagesUrls
+  async getFilesUrls(newsId: number): Promise<IGetFilesByNewsIdResponseContract> {
+    const newsFiles = await this.filesModel.findOne({newsId}).select('-__v')
+    const {imagesUrls, videosUrls} = this.generationUrls(newsFiles)
+    return {imagesUrls, videosUrls}
   }
 
-  async getImagesListByNewsIds(newsIdsList: number[]): Promise<IGetImagesByNewsIdsListResponseContract> {
-    const newsImagesByIds = await this.filesModel.find({newsId: {"$in": newsIdsList}})
-    if (!newsImagesByIds) return []
-    let newsImagesList = []
-    newsImagesByIds.forEach((newsImages) => {
+  async getFilesListByNewsIds(newsIdsList: number[]): Promise<IGetFilesByNewsIdsListResponseContract> {
+    const newsFilesByIds = await this.filesModel.find({newsId: {"$in": newsIdsList}})
+    if (!newsFilesByIds) return []
+    let newsFilesList = []
+    newsFilesByIds.forEach((newsFiles) => {
       const newsData = {}
-      const imagesUrls = []
-      newsImages.images.forEach((image) => {
-        image = `${this.configService.get<string>('SERVER_URL')}/images/${image}`
-        imagesUrls.push(image)
-      })
-      newsData['newsId'] = newsImages.newsId
+      const {imagesUrls, videosUrls} = this.generationUrls(newsFiles)
+      newsData['newsId'] = newsFiles.newsId
       newsData['images'] = imagesUrls
-      newsImagesList.push(newsData)
+      newsData['videos'] = videosUrls
+      newsFilesList.push(newsData)
     })
-    return newsImagesList
+    return newsFilesList
   }
 
-  async updateNewsImages(newsId: number, images: File[]): Promise<{success: boolean, message: string}> {
-    const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
-    const imagesArray: string[] = []
-    for (const image of images) {
-      const imagePath = await FilesService.createFile(image)
-      imagesArray.push(imagePath)
-    }
-    if (newsImages) {
-      await this.filesModel.updateOne({newsId}, {images: imagesArray, createdAt: Date.now()})
-      newsImages.images.forEach((image) => FilesService.removeFile(image))
-    } else await this.filesModel.create({newsId, images: imagesArray, createdAt: Date.now()})
-    return {success: true, message: `Images for news with id ${newsId} has been updated!`}
+  async updateNewsFiles(newsId: number, images: File[], videos: File[]): Promise<{success: boolean, message: string}> {
+    const newsFiles = await this.filesModel.findOne({newsId}).select('-__v')
+    const {imagesArray, videosArray} = await FilesService.saveFiles(images, videos)
+    if (newsFiles) {
+      const updateSet = {
+        images: images ? imagesArray : newsFiles.images,
+        videos: videos ? videosArray : newsFiles.videos,
+        createdAt: Date.now()
+      }
+      await this.filesModel.updateOne({newsId}, updateSet)
+      if (images) {
+        newsFiles.images.forEach((image) => FilesService.removeFile(image))
+      }
+      if (videos) {
+        newsFiles.videos.forEach((video) => FilesService.removeFile(video))
+      }
+    } else await this.filesModel.create({
+      newsId, images: imagesArray, videos: videosArray, createdAt: Date.now()
+    })
+    return {success: true, message: `Files for news with id ${newsId} has been updated!`}
   }
 
-  async deleteImages(newsId): Promise<void> {
+  async deleteFiles(newsId): Promise<void> {
     const newsImages = await this.filesModel.findOne({newsId}).select('-__v')
     if (newsImages) {
       await this.filesModel.deleteOne({newsId})
       newsImages.images.forEach((image) => FilesService.removeFile(image))
+      newsImages.videos.forEach((video) => FilesService.removeFile(video))
     }
   }
 
-  private static async createFile(file): Promise<string> {
+
+  private generationUrls(newsFiles): {imagesUrls: string[], videosUrls: string[]} {
+    const imagesUrls = []
+    const videosUrls = []
+    newsFiles.images.forEach((image) => {
+      image = `${this.configService.get<string>('SERVER_URL')}/files/${image}`
+      imagesUrls.push(image)
+    })
+    newsFiles.videos.forEach((video) => {
+      video = `${this.configService.get<string>('SERVER_URL')}/files/${video}`
+      videosUrls.push(video)
+    })
+    return {imagesUrls, videosUrls}
+  }
+
+  private static async saveFiles(
+    images: File[], videos: File[]
+  ): Promise<{ imagesArray: string[], videosArray: string[] }> {
+    const imagesArray: string[] = []
+    const videosArray: string[] = []
+    if (images) {
+      for (const image of images) {
+        const imagePath = await FilesService.createFile(image, FileTypeEnum.IMAGE)
+        imagesArray.push(imagePath)
+      }
+    }
+    if (videos) {
+      for (const video of videos) {
+        const videoPath = await FilesService.createFile(video, FileTypeEnum.VIDEO)
+        videosArray.push(videoPath)
+      }
+    }
+    return {imagesArray, videosArray}
+  }
+
+  private static async createFile(file: File, fileType: FileTypeEnum): Promise<string> {
     try {
-      const buffer = Buffer.from(file.buffer)
-      const editedImage = await this.editImage(buffer)
-      const metadata = await sharp(editedImage).metadata()
-      const fileName = 'image-' + shortId.generate() + '.' + metadata.format;
+      let buffer = Buffer.from(file.buffer)
+      let fileName = ''
+      if (fileType === FileTypeEnum.IMAGE) {
+        buffer = await this.editImage(buffer)
+        const metadata = await sharp(buffer).metadata()
+        fileName = 'image-' + shortId.generate() + '.' + metadata.format;
+      } else if (fileType === FileTypeEnum.VIDEO) {
+        const fileExtension = file.originalname.split('.').pop()
+        fileName = 'video-' + shortId.generate() + '.' + fileExtension;
+      }
       const filePath = path.resolve(__dirname, '..', '..', 'src', 'storage', 'uploads');
       const fullPath = path.resolve(filePath, fileName)
       if (!fs.existsSync(filePath)) {
         fs.mkdirSync(filePath, {recursive: true});
       }
-      fs.writeFileSync(fullPath, editedImage);
+      fs.writeFileSync(fullPath, buffer);
       return fileName
     } catch (err) {
       throw new RpcException(new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR));
@@ -116,10 +154,9 @@ export class FilesService {
     const imageHeight = 1024
 
     // Уменьшение изображения до нужного размера с сохранением пропорций и преобразование формата
-    const resizedImageBuffer = await sharp(imageBuffer)
+    return await sharp(imageBuffer)
       .resize({width: imageWidth, height: imageHeight, fit: 'inside', withoutEnlargement: true})
       .jpeg({quality: 100})
       .toBuffer()
-    return resizedImageBuffer
   }
 }

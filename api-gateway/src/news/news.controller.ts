@@ -1,45 +1,49 @@
 import {
-  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Post, Put, Query, UploadedFiles,
-  UseGuards, UseInterceptors
+  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Post, Put, Query,
+  UploadedFiles, UseGuards, UseInterceptors
 } from '@nestjs/common';
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
 import {GetCurrentUserId} from "../auth/decorators/get-current-user-id.decorator";
-import {ClientProxyRMQ} from "../proxy-rmq/client-proxy-rmq";
 import {NewsService} from "./news.service";
 import {CreateNewsDto} from "./dto/create-news.dto";
 import {PaginationDto} from "../common/dto/pagination.dto";
 import {SearchNewsDto} from "./dto/search-news.dto";
 import {UpdateNewsDto} from "./dto/update-news.dto";
 import {FileFieldsInterceptor} from "@nestjs/platform-express";
-import {INewsWithAuthorImages} from "./interfaces/news-with-author-images";
+import {INewsWithAuthorFiles} from "./interfaces/news-with-author-files";
 import {SearchNewsInterface} from "./interfaces/search-news.interface";
 import {IDeleteNewsResponseContract} from "./contracts";
 import {ImagesInterceptor} from "../common/interceptors/images.interceptor";
+import {UploadFilesDto} from "./dto/upload-files.dto";
+import {VideosInterceptor} from "../common/interceptors/videos.interceptor";
 
 @Controller('news')
 export class NewsController {
   private readonly logger = new Logger(NewsController.name)
-  private clientLogger = this.clientProxyRMQ.getClientProxyLoggerInstance()
 
-  constructor(private newsService: NewsService, private clientProxyRMQ: ClientProxyRMQ) {}
+  constructor(private newsService: NewsService) {}
 
   @Post('')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]),
-    ImagesInterceptor
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 4},
+      { name: 'videos', maxCount: 1}
+    ]),
+    ImagesInterceptor,
+    VideosInterceptor
   )
   async createNews(
     @GetCurrentUserId() authorId: number,
     @Body() dto: CreateNewsDto,
-    @UploadedFiles() images
+    @UploadedFiles() files: UploadFilesDto
   ): Promise<{ success: boolean, message: string }> {
     this.logger.log(`Try to create news`)
-    return await this.newsService.createNews(authorId, dto, images.images);
+    return await this.newsService.createNews(authorId, dto, files.images, files.videos);
   }
 
   @Get('')
-  async findAllNews(@Query() dto: PaginationDto): Promise<INewsWithAuthorImages[]> {
+  async findAllNews(@Query() dto: PaginationDto): Promise<INewsWithAuthorFiles[]> {
     this.logger.log(`Try to find all news`)
     return await this.newsService.findAllNews(dto);
   }
@@ -48,7 +52,7 @@ export class NewsController {
   @UseGuards(JwtAuthGuard)
   async getUserSubscriptionNews(
     @GetCurrentUserId() userId: number, @Query() dto: PaginationDto
-  ): Promise<INewsWithAuthorImages[]> {
+  ): Promise<INewsWithAuthorFiles[]> {
     this.logger.log(`Try to get user subscription news`)
     return await this.newsService.getUserSubscriptionNews(userId, dto);
   }
@@ -60,7 +64,7 @@ export class NewsController {
   }
 
   @Get(':id')
-  async findOneNews(@Param('id', ParseIntPipe) id: number): Promise<INewsWithAuthorImages> {
+  async findOneNews(@Param('id', ParseIntPipe) id: number): Promise<INewsWithAuthorFiles> {
     this.logger.log(`Try to find news by id`)
     return await this.newsService.findOneNews(id);
   }
@@ -68,17 +72,21 @@ export class NewsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'images', maxCount: 4 }]),
-    ImagesInterceptor
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 4 },
+      { name: 'videos', maxCount: 1}
+    ]),
+    ImagesInterceptor,
+    VideosInterceptor
   )
   async updateNews(
     @Param('id', ParseIntPipe) id: number,
     @GetCurrentUserId() authorId: number,
     @Body() dto: UpdateNewsDto,
-    @UploadedFiles() images
-  ): Promise<INewsWithAuthorImages> {
+    @UploadedFiles() files: UploadFilesDto
+  ): Promise<INewsWithAuthorFiles> {
     this.logger.log(`Try to update news`)
-    return await this.newsService.updateNews(id, authorId, dto, images.images);
+    return await this.newsService.updateNews(id, authorId, dto, files.images, files.videos);
   }
 
   @Delete(':id')

@@ -18,7 +18,7 @@ export class TimeoutInterceptor implements NestInterceptor {
     const url = context.getArgs()[0].url
     const method = context.getArgs()[0].method
     return next.handle().pipe(
-      timeout(10000),
+      timeout(15000),
       catchError(err => {
         if (err instanceof TimeoutError) {
           const payload: LoggerDto = {
