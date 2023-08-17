@@ -11,8 +11,7 @@ import {
   IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
   IGetFilesByNewsIdResponseContract, IGetFilesByNewsIdsListResponseContract, IGetUsersByIdsResponseContract,
   ISearchNewsRequestContract, ISearchNewsResponseContract, IUpdateNewsRequestContract,
-  IUpdateNewsResponseContract, IUsersSubscriptionsResponseContract, IUserSubscriptionNewsRequestContract,
-  IUserSubscriptionNewsResponseContract
+  IUsersSubscriptionsResponseContract, IUserSubscriptionNewsRequestContract, IUserSubscriptionNewsResponseContract
 } from "./contracts";
 import {INewsWithAuthor} from "./interfaces/news-with-author.interface";
 import {INewsWithAuthorFiles} from "./interfaces/news-with-author-files";
@@ -79,14 +78,12 @@ export class NewsService {
 
   async updateNews(
     id: number, authorId: number, dto: UpdateNewsDto, images: File[], videos: File[]
-  ): Promise<INewsWithAuthorFiles> {
+  ): Promise<{ success: boolean, message: string }> {
     const payload: IUpdateNewsRequestContract = {
       newsDto: {id, authorId, ...dto}, images: images ? images : undefined, videos: videos ? videos : undefined
     }
-    const newsResponse = this.clientNews.send('update-news', payload)
-    const news: IUpdateNewsResponseContract = await lastValueFrom(newsResponse)
-    const newsWithAuthors: INewsWithAuthor = await this.addAuthorToNews(news)
-    return await this.addFilesToNews(newsWithAuthors)
+    this.clientNews.emit('update-news', payload)
+    return {success: true, message: 'The news has been sent for processing and will be available soon!'}
   }
 
   async deleteNews(id: number, authorId: number): Promise<IDeleteNewsResponseContract> {

@@ -6,8 +6,7 @@ import {
   ICreateNewsRequestContract, IDeleteNewsRequestContract, IDeleteNewsResponseContract,
   IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
   ISearchNewsRequestContract, ISearchNewsResponseContract, IUpdateNewsRequestContract,
-  IUpdateNewsResponseContract, IUserSubscriptionNewsRequestContract,
-  IUserSubscriptionNewsResponseContract
+  IUserSubscriptionNewsRequestContract, IUserSubscriptionNewsResponseContract
 } from "./contracts";
 
 @Controller()
@@ -92,18 +91,23 @@ export class NewsController {
     }
   }
 
-  @MessagePattern('update-news')
+  @EventPattern('update-news')
   async updateNews(
     @Payload() request: IUpdateNewsRequestContract, @Ctx() context: RmqContext
-  ): Promise<IUpdateNewsResponseContract> {
+  ): Promise<void> {
     const channel = context.getChannelRef();
     const originalMessage = context.getMessage();
     try {
       this.logger.log(`Try to update news`)
-      return await this.newsService.updateNews(request.newsDto, request.images, request.videos);
-    } finally {
+      await this.newsService.updateNews(request.newsDto, request.images, request.videos)
+      await channel.ack(originalMessage)
       this.logger.log(`UpdateNews: Acknowledge message success`)
-      await channel.ack(originalMessage);
+    } catch (error) {
+      this.logger.error(`Error: ${error}`);
+      if (AckErrors.hasAckErrors(error.message)) {
+        await channel.ack(originalMessage)
+        this.logger.log(`UpdateNews: Acknowledge message success`)
+      }
     }
   }
 

@@ -16,7 +16,7 @@ import {
   ICreateFilesRequestContract, IDeleteNewsRequestContract, IDeleteNewsResponseContract,
   IFindOneNewsResponseContract, IGetAllNewsRequestContract, IGetAllNewsResponseContract,
   ISearchNewsRequestContract, ISearchNewsResponseContract, IUpdateFilesRequestContract,
-  IUpdateNewsResponseContract, IUserSubscriptionNewsRequestContract, IUserSubscriptionNewsResponseContract
+  IUserSubscriptionNewsRequestContract, IUserSubscriptionNewsResponseContract
 } from "./contracts";
 
 @Injectable()
@@ -112,7 +112,7 @@ export class NewsService {
     return news;
   }
 
-  async updateNews(dto: UpdateNewsDto, images: File[], videos: File[]): Promise<IUpdateNewsResponseContract> {
+  async updateNews(dto: UpdateNewsDto, images: File[], videos: File[]): Promise<void> {
     const news: NewsEntity = await this.findNewsById(dto.id);
     if (news.authorId === dto.authorId) {
       const updateSet = {...dto, isImages: images ? true : news.isImages, isVideos: videos ? true : news.isVideos}
@@ -135,7 +135,6 @@ export class NewsService {
         const updateFilesResponse = this.clientFiles.send('update-files', payload)
         await lastValueFrom(updateFilesResponse)
       }
-      return updatedNews.raw[0]
     } else {
       throw new RpcException(new BadRequestException(
         `News with id "${dto.id}" has not been updated! Access denied!`,

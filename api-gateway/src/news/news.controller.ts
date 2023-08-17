@@ -84,7 +84,7 @@ export class NewsController {
     @GetCurrentUserId() authorId: number,
     @Body() dto: UpdateNewsDto,
     @UploadedFiles() files: UploadFilesDto
-  ): Promise<INewsWithAuthorFiles> {
+  ): Promise<{ success: boolean, message: string }> {
     this.logger.log(`Try to update news`)
     return await this.newsService.updateNews(id, authorId, dto, files.images, files.videos);
   }
