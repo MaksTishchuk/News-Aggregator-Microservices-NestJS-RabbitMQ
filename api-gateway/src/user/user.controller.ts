@@ -1,6 +1,21 @@
 import {
-  Body, Controller, Delete, Get, HttpStatus, Logger, Param, ParseFilePipeBuilder, ParseIntPipe,
-  Patch, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  ParseFilePipeBuilder,
+  ParseIntPipe,
+  Patch,
+  Put,
+  Query,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
 import { File } from 'multer'
 import {UserService} from "./user.service";
@@ -21,7 +36,19 @@ import {
   ISearchUsersResponseContract, ISubscribeOnUserResponseContract, IUpdateUserAvatarResponseContract,
   IUpdateUserProfileResponseContract
 } from "./contracts";
+import {
+  ApiBadRequestResponse, ApiBody, ApiConsumes, ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation, ApiParam,
+  ApiSecurity,
+  ApiTags, ApiUnprocessableEntityResponse
+} from "@nestjs/swagger";
+import {UserEntityDto} from "./swagger-response/user-entity.dto";
+import {ExceptionResponseDto} from "../common/swagger-response/exception-response.dto";
+import {UserEntityWithSubscribersDto} from "./swagger-response/user-entity-with-subscribers.dto";
+import {AvatarDto} from "./dto/avatar.dto";
 
+@ApiTags('Users')
 @Controller('users')
 export class UserController {
   private readonly logger = new Logger(UserController.name)
@@ -29,18 +56,40 @@ export class UserController {
 
   constructor(private userService: UserService, private clientProxyRMQ: ClientProxyRMQ) {}
 
+  @ApiOperation({ description: 'Got all users' })
+  @ApiOkResponse({
+    type: [UserEntityDto],
+    description: 'Get all users'
+  })
   @Get('')
+  @HttpCode(200)
   async getAllUsers(@Query() paginationDto: PaginationDto): Promise<IGetAllUsersResponseContract> {
     this.logger.log(`Try to get all users`)
     return await this.userService.getAllUsers(paginationDto);
   }
 
+  @ApiOperation({ description: 'Got users by username or email' })
+  @ApiOkResponse({
+    type: [UserEntityDto],
+    description: 'Get users by username or email'
+  })
+  @ApiBadRequestResponse({
+    type: ExceptionResponseDto,
+    description: 'Search fields should not be empty!'
+  })
   @Get('search')
+  @HttpCode(200)
   searchUsers(@Query() searchUsersDto: SearchUsersDto): Promise<ISearchUsersResponseContract> {
     this.logger.log(`Try to search users`)
     return this.userService.searchUsers(searchUsersDto);
   }
 
+  @ApiOperation({ description: 'Got user profile' })
+  @ApiOkResponse({
+    type: UserEntityWithSubscribersDto,
+    description: 'Get user profile'
+  })
+  @ApiSecurity('bearer')
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   async getUserProfile(@GetCurrentUserId() id: number): Promise<IGetUserProfileResponseContract> {
@@ -48,6 +97,16 @@ export class UserController {
     return await this.userService.getUserProfile(id);
   }
 
+  @ApiOperation({ description: 'Update user profile' })
+  @ApiOkResponse({
+    type: UserEntityWithSubscribersDto,
+    description: 'Updated user profile!'
+  })
+  @ApiBadRequestResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${id number}" has not been updated!'
+  })
+  @ApiSecurity('bearer')
   @Put('profile')
   @UseGuards(JwtAuthGuard)
   async updateUserProfile(
@@ -57,6 +116,17 @@ export class UserController {
     return await this.userService.updateUserProfile(id, dto);
   }
 
+  @ApiOperation({ description: 'Get user avatar' })
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'Should be an id of user that exists in the database',
+    type: Number
+  })
+  @ApiOkResponse({
+    type: String,
+    description: 'Url path to avatar!'
+  })
   @Get(':userId/avatar')
   async getUserAvatar(@Res() res: Response, @Param('userId', ParseIntPipe) id: number): Promise<void> {
     this.logger.log(`Try to update user avatar`)
@@ -69,6 +139,29 @@ export class UserController {
     }
   }
 
+  @ApiOperation({ description: 'Update user avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: AvatarDto,
+    description: 'User avatar image file'
+  })
+  @ApiOkResponse({
+    type: UserEntityWithSubscribersDto,
+    description: 'User with updated avatar!'
+  })
+  @ApiBadRequestResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${id number}" has not been updated!'
+  })
+  @ApiNotFoundResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${id}" was not found!'
+  })
+  @ApiUnprocessableEntityResponse({
+    type: ExceptionResponseDto,
+    description: 'Validation failed (expected type is /(jpg|jpeg|png|gif)$/)'
+  })
+  @ApiSecurity('bearer')
   @Patch('profile/avatar')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
@@ -85,12 +178,34 @@ export class UserController {
     return await this.userService.updateUserAvatar(id, avatar);
   }
 
+  @ApiOperation({ description: 'Get user' })
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'Should be an id of user that exists in the database',
+    type: Number
+  })
+  @ApiOkResponse({
+    type: UserEntityWithSubscribersDto,
+    description: 'Get user by id!'
+  })
+  @ApiNotFoundResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${id}" was not found!'
+  })
   @Get(':userId')
   async getUserById(@Param('userId', ParseIntPipe) id: number): Promise<IGetUserByIdResponseContract> {
     this.logger.log(`Try to get user by id`)
     return await this.userService.getUserById(id);
   }
 
+  @ApiOperation({ description: 'Delete user' })
+  @ApiOkResponse()
+  @ApiBadRequestResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${id}" was not deleted!'
+  })
+  @ApiSecurity('bearer')
   @Delete(':userId')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async deleteUser(@Param('userId', ParseIntPipe) id: number): Promise<void> {
@@ -100,6 +215,25 @@ export class UserController {
     await this.userService.deleteUser(id);
   }
 
+  @ApiOperation({ description: 'Subscribe on user' })
+  @ApiParam({
+    name: 'subscriptionUserId',
+    required: true,
+    description: 'Should be an id of user which another user want subscribe',
+    type: Number
+  })
+  @ApiOkResponse({
+    type: UserEntityWithSubscribersDto,
+    description: 'Got user which another user subscribe!'
+  })
+  @ApiNotFoundResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${id}" was not found!'
+  })
+  @ApiBadRequestResponse({
+    type: ExceptionResponseDto,
+    description: 'User with id "${subscriptionUserId}" cannot subscribe to himself'
+  })
   @Patch('subscribe/:subscriptionUserId')
   @UseGuards(JwtAuthGuard)
   async subscribeOnUser(

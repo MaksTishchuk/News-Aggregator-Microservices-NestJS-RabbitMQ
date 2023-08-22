@@ -29,6 +29,7 @@
     "@nestjs/passport": "^10.0.0",
     "@nestjs/platform-express": "^9.4.3",
     "@nestjs/serve-static": "^4.0.0",
+    "@nestjs/swagger": "^7.1.8",
     "@types/passport-jwt": "^3.0.9",
     "amqp-connection-manager": "^4.1.14",
     "amqplib": "^0.10.3",
