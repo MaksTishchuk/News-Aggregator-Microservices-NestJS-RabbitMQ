@@ -41,7 +41,7 @@ import {
   ApiOkResponse,
   ApiOperation, ApiParam,
   ApiSecurity,
-  ApiTags, ApiUnprocessableEntityResponse
+  ApiTags, ApiUnauthorizedResponse, ApiUnprocessableEntityResponse
 } from "@nestjs/swagger";
 import {UserEntityDto} from "./swagger-response/user-entity.dto";
 import {ExceptionResponseDto} from "../common/swagger-response/exception-response.dto";
@@ -56,7 +56,7 @@ export class UserController {
 
   constructor(private userService: UserService, private clientProxyRMQ: ClientProxyRMQ) {}
 
-  @ApiOperation({ description: 'Got all users' })
+  @ApiOperation({ description: 'Get all users' })
   @ApiOkResponse({
     type: [UserEntityDto],
     description: 'Get all users'
@@ -68,7 +68,7 @@ export class UserController {
     return await this.userService.getAllUsers(paginationDto);
   }
 
-  @ApiOperation({ description: 'Got users by username or email' })
+  @ApiOperation({ description: 'Get users by username or email' })
   @ApiOkResponse({
     type: [UserEntityDto],
     description: 'Get users by username or email'
@@ -84,7 +84,7 @@ export class UserController {
     return this.userService.searchUsers(searchUsersDto);
   }
 
-  @ApiOperation({ description: 'Got user profile' })
+  @ApiOperation({ description: 'Get user profile' })
   @ApiOkResponse({
     type: UserEntityWithSubscribersDto,
     description: 'Get user profile'
@@ -204,6 +204,10 @@ export class UserController {
   @ApiBadRequestResponse({
     type: ExceptionResponseDto,
     description: 'User with id "${id}" was not deleted!'
+  })
+  @ApiUnauthorizedResponse({
+    type: ExceptionResponseDto,
+    description: 'User without Admin role can`t make this request!'
   })
   @ApiSecurity('bearer')
   @Delete(':userId')

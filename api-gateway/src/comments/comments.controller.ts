@@ -9,8 +9,9 @@ import {PaginationDto} from "../common/dto/pagination.dto";
 import {UpdateCommentDto} from "./dto/update-comment.dto";
 import {ICommentWithAuthor} from "./interfaces/comment-with-author.interface";
 import {IDeleteCommentResponseContract} from "./contracts";
+import {ApiTags} from "@nestjs/swagger";
 
-
+@ApiTags('Comments')
 @Controller('comments')
 export class CommentsController {
   private readonly logger = new Logger(CommentsController.name)

@@ -18,7 +18,9 @@ import {UploadFilesDto} from "./dto/upload-files.dto";
 import {VideosInterceptor} from "../common/interceptors/videos.interceptor";
 import {Response} from "express";
 import {ConfigService} from "@nestjs/config";
+import {ApiTags} from "@nestjs/swagger";
 
+@ApiTags('News')
 @Controller('news')
 export class NewsController {
   private readonly logger = new Logger(NewsController.name)

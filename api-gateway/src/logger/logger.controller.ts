@@ -15,7 +15,17 @@ import {LoggerDto} from "../common/dto/logger.dto";
 import {makeLoggerPayload} from "../common/utils/logger.payload";
 import {LogTypeEnum} from "../common/enums/log-type.enum";
 import {IGetAllLogsResponseContract} from "./contracts";
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiSecurity,
+  ApiTags,
+  ApiUnauthorizedResponse
+} from "@nestjs/swagger";
+import {LogsEntityDto} from "./swagger-response/log-entity.dto";
+import {ExceptionResponseDto} from "../common/swagger-response/exception-response.dto";
 
+@ApiTags('Logs')
 @Controller('logs')
 export class LoggerController {
 
@@ -24,6 +34,16 @@ export class LoggerController {
 
   constructor(private readonly logsService: LoggerService, private clientProxyRMQ: ClientProxyRMQ) {}
 
+  @ApiOperation({ description: 'Get all logs or logs by type' })
+  @ApiOkResponse({
+    type: [LogsEntityDto],
+    description: 'Get all logs or logs by type'
+  })
+  @ApiUnauthorizedResponse({
+    type: ExceptionResponseDto,
+    description: 'User without Admin role can`t make this request!'
+  })
+  @ApiSecurity('bearer')
   @Get('')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findAllLogs(@Query() dto: LogsTypeDto): Promise<IGetAllLogsResponseContract> {
@@ -31,6 +51,13 @@ export class LoggerController {
     return await this.logsService.findAllLogs(dto);
   }
 
+  @ApiOperation({ description: 'Clear logs' })
+  @ApiOkResponse()
+  @ApiUnauthorizedResponse({
+    type: ExceptionResponseDto,
+    description: 'User without Admin role can`t make this request!'
+  })
+  @ApiSecurity('bearer')
   @Delete('clear')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async clearLogs(@Query() dto: LogsTypeDto): Promise<void> {
