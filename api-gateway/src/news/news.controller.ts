@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Post, Put, Query,
+  Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Post, Put, Query, Res,
   UploadedFiles, UseGuards, UseInterceptors
 } from '@nestjs/common';
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
@@ -16,12 +16,14 @@ import {IDeleteNewsResponseContract} from "./contracts";
 import {ImagesInterceptor} from "../common/interceptors/images.interceptor";
 import {UploadFilesDto} from "./dto/upload-files.dto";
 import {VideosInterceptor} from "../common/interceptors/videos.interceptor";
+import {Response} from "express";
+import {ConfigService} from "@nestjs/config";
 
 @Controller('news')
 export class NewsController {
   private readonly logger = new Logger(NewsController.name)
 
-  constructor(private newsService: NewsService) {}
+  constructor(private newsService: NewsService, private configService: ConfigService) {}
 
   @Post('')
   @UseGuards(JwtAuthGuard)
@@ -61,6 +63,13 @@ export class NewsController {
   searchUsers(@Query() dto: SearchNewsDto): Promise<SearchNewsInterface> {
     this.logger.log(`Try to search news`)
     return this.newsService.searchNews(dto);
+  }
+
+  @Get('stream-video')
+  async streamVideo(@Res() res: Response, @Query() query) {
+    this.logger.log(`Try to stream video with name ${query.videoName}`)
+    const url = `${this.configService.get('FILES_SERVER_URL')}/files/stream-video?videoName=${query.videoName}`
+    return res.redirect(url)
   }
 
   @Get(':id')

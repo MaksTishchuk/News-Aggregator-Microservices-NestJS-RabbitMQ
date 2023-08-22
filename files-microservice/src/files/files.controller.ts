@@ -1,4 +1,6 @@
-import {Controller, Logger} from '@nestjs/common';
+import {Controller, Get, Logger, Query, Res} from '@nestjs/common';
+import {createReadStream, ReadStream} from 'fs'
+import * as fs from 'fs';
 import {FilesService} from './files.service';
 import {Ctx, EventPattern, MessagePattern, Payload, RmqContext} from "@nestjs/microservices";
 import {AckErrors} from "../common/ack-errors";
@@ -13,6 +15,38 @@ export class FilesController {
   private logger = new Logger(FilesController.name)
 
   constructor(private readonly filesService: FilesService) {}
+
+  @Get('stream-video')
+  async streamVideo(@Res() response, @Query() query) {
+    const videoPath = await this.filesService.streamVideo(query.videoName)
+    const stat = fs.statSync(videoPath);
+    const fileSize = stat.size;
+    const range = response.req.headers.range;
+
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = end - start + 1;
+      const file = fs.createReadStream(videoPath, {start, end});
+      const headers = {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': 'video/mp4', // Подставьте подходящий MIME-тип для вашего видеоформата
+      };
+
+      response.writeHead(206, headers);
+      file.pipe(response);
+    } else {
+      const headers = {
+        'Content-Length': fileSize,
+        'Content-Type': 'video/mp4',
+      };
+      response.writeHead(200, headers)
+      createReadStream(videoPath).pipe(response)
+    }
+  }
 
   @EventPattern('create-files')
   async createFiles(

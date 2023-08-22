@@ -24,6 +24,11 @@ export class FilesService {
   ) {
   }
 
+  async streamVideo(videoName: string): Promise<string> {
+    const filePath = path.resolve(__dirname, '..', '..', 'src', 'storage', 'uploads');
+    return path.resolve(filePath, videoName)
+  }
+
   async createFiles(newsId: number, images: File[], videos: File[]): Promise<void> {
     const {imagesArray, videosArray} = await FilesService.saveFiles(images, videos)
     await this.filesModel.create({newsId, images: imagesArray, videos: videosArray, createdAt: Date.now()})
