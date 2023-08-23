@@ -10,8 +10,8 @@ export class VideosInterceptor implements NestInterceptor {
       const maxFileSize = 20000000
       const videos = request.files.videos;
       for (const video of videos) {
-        if (!video.mimetype.startsWith('video/')) {
-          throw new HttpException(`Invalid video extension!`, HttpStatus.UNPROCESSABLE_ENTITY
+        if (!video.mimetype.startsWith('video/mp4')) {
+          throw new HttpException(`Invalid video extension! Only mp4!`, HttpStatus.UNPROCESSABLE_ENTITY
           )
         }
         if (video.size > maxFileSize) {
