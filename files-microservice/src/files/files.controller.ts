@@ -27,13 +27,13 @@ export class FilesController {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      const chunksize = end - start + 1;
+      const chunkSize = end - start + 1;
       const file = fs.createReadStream(videoPath, {start, end});
       const headers = {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
-        'Content-Length': chunksize,
-        'Content-Type': 'video/mp4', // Подставьте подходящий MIME-тип для вашего видеоформата
+        'Content-Length': chunkSize,
+        'Content-Type': 'video/mp4'
       };
 
       response.writeHead(206, headers);
