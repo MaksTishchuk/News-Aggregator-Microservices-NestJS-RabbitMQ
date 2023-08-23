@@ -7,7 +7,7 @@ export class VideosInterceptor implements NestInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
     if (request.files.videos) {
-      const maxFileSize = 5242880
+      const maxFileSize = 20000000
       const videos = request.files.videos;
       for (const video of videos) {
         if (!video.mimetype.startsWith('video/')) {

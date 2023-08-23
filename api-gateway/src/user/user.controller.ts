@@ -37,11 +37,8 @@ import {
   IUpdateUserProfileResponseContract
 } from "./contracts";
 import {
-  ApiBadRequestResponse, ApiBody, ApiConsumes, ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation, ApiParam,
-  ApiSecurity,
-  ApiTags, ApiUnauthorizedResponse, ApiUnprocessableEntityResponse
+  ApiBadRequestResponse, ApiBody, ApiConsumes, ApiNotFoundResponse, ApiOkResponse, ApiOperation,
+  ApiParam, ApiSecurity, ApiTags, ApiUnauthorizedResponse, ApiUnprocessableEntityResponse
 } from "@nestjs/swagger";
 import {UserEntityDto} from "./swagger-response/user-entity.dto";
 import {ExceptionResponseDto} from "../common/swagger-response/exception-response.dto";

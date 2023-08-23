@@ -20,11 +20,11 @@ export class CreateNewsDto {
   @IsString()
   body: string;
 
-  @ApiPropertyOptional({ type: [File], format: 'binary' })
+  @ApiPropertyOptional({ type: ['string'], format: 'binary' })
   @IsOptional()
   images?: File[];
 
-  @ApiPropertyOptional({ type: [File], format: 'binary' })
+  @ApiPropertyOptional({ type: ['string'], format: 'binary' })
   @IsOptional()
-  video?: File[];
+  videos?: File[];
 }
